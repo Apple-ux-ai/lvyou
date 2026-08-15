@@ -1,0 +1,320 @@
+{
+  "data": [
+    {
+      "id": "page-home",
+      "type": "page",
+      "title": "首页",
+      "name": "首页",
+      "version": 1,
+      "createdAt": 1722412800000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0,
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 2589,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-5a4e318f",
+          "measuredAt": 1785632265123
+        },
+        "deviceType": "desktop"
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/home.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-assistant",
+      "type": "page",
+      "title": "AI 旅行助手",
+      "name": "AI 旅行助手",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-99736694",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/assistant.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-destination",
+      "type": "page",
+      "title": "目的地详情",
+      "name": "目的地详情",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-27b98914",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/destination.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-guides",
+      "type": "page",
+      "title": "攻略列表",
+      "name": "攻略列表",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 1860,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-f55b97c5",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guides.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-guide-detail",
+      "type": "page",
+      "title": "攻略详情",
+      "name": "攻略详情",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 2480,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-47c598ec",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-detail.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-auth",
+      "type": "page",
+      "title": "登录 / 注册",
+      "name": "登录 / 注册",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 3100,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-99edbe4a",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/auth.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-profile",
+      "type": "page",
+      "title": "个人中心",
+      "name": "个人中心",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 3720,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 900,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-d716db21",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/profile.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-explore",
+      "type": "page",
+      "title": "探索页",
+      "name": "探索页",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 4340,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 1088,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-1c6f190a",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/explore.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-planner",
+      "type": "page",
+      "title": "行程规划器",
+      "name": "行程规划器",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 4960,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 862,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-9ca9afc6",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/planner.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-compare",
+      "type": "page",
+      "title": "目的地对比",
+      "name": "目的地对比",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 5580,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 848,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-eb358337",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/compare.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-budget",
+      "type": "page",
+      "title": "预算计算器",
+      "name": "预算计算器",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 6200,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop",
+        "layoutSnapshot": {
+          "version": 1,
+          "contentHeight": 743,
+          "viewportWidth": 1440,
+          "sourceHash": "fnv1a-c8b02cdf",
+          "measuredAt": 1785632265123
+        }
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/budget.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-visa",
+      "type": "page",
+      "title": "签证查询",
+      "name": "签证查询",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 6820,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop"
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/visa.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-currency",
+      "type": "page",
+      "title": "汇率换算",
+      "name": "汇率换算",
+      "version": 1,
+      "createdAt": 1785568141070,
+      "canvasData": {
+        "x": 7440,
+        "y": 0,
+        "group": 0,
+        "deviceType": "desktop"
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/currency.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "visualEditorEnabled": false
+  }
+}

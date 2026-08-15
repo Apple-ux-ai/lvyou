@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 目的地对比</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    /* ── SVG Icons ── */
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function PlusIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>; }
+    function TrashIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>; }
+    function ArrowLeftIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>; }
+    function CheckIcon({ size = 12 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>; }
+    function MinusIcon({ size = 12 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/></svg>; }
+    function AlertIcon({ size = 12 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>; }
+    function ClockIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function WalletIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>; }
+    function MapPinIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+    function UsersIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
+    function ShieldIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>; }
+    function CalendarIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>; }
+    function WandIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>; }
+
+    /* ── Data ── */
+    const destinations = {
+      kyoto: { id: "kyoto", name: "京都", country: "日本", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=220&fit=crop", cost: 8500, season: "春季（3-4月）", crowd: "热门", visa: "需办理", safety: "很高", diff: "中等" },
+      bali: { id: "bali", name: "巴厘岛", country: "印尼", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&h=220&fit=crop", cost: 6000, season: "旱季（4-10月）", crowd: "热门", visa: "免签", safety: "较高", diff: "低" },
+      iceland: { id: "iceland", name: "冰岛", country: "北欧", img: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=400&h=220&fit=crop", cost: 20000, season: "冬季（9-3月极光）", crowd: "人少", visa: "申根签", safety: "很高", diff: "高" },
+      dali: { id: "dali", name: "大理", country: "云南", img: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=400&h=220&fit=crop", cost: 3500, season: "全年（11-3月最佳）", crowd: "适中", visa: "无需", safety: "很高", diff: "低" },
+      tokyo: { id: "tokyo", name: "东京", country: "日本", img: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=220&fit=crop", cost: 9000, season: "全年（春秋最佳）", crowd: "人很多", visa: "需办理", safety: "很高", diff: "低" },
+      xingjiang: { id: "xingjiang", name: "新疆", country: "中国", img: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=220&fit=crop", cost: 7000, season: "夏季（6-9月）", crowd: "适中", visa: "无需", safety: "很高", diff: "中等" },
+      swiss: { id: "swiss", name: "瑞士", country: "欧洲", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=220&fit=crop", cost: 18000, season: "夏季（6-9月）", crowd: "适中", visa: "申根签", safety: "很高", diff: "低" },
+      thailand: { id: "thailand", name: "清迈", country: "泰国", img: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=400&h=220&fit=crop", cost: 3500, season: "凉季（11-2月）", crowd: "热门", visa: "免签", safety: "较高", diff: "低" }
+    };
+
+    const MAX_COMPARE = 3;
+
+    const ratingMap = { "很低": 1, "低": 2, "适中": 3, "中等": 3, "较高": 4, "高": 4, "很高": 5, "人少": 2, "热门": 4, "人很多": 5 };
+
+    /* ── Components ── */
+    function Topbar() {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <a className="back-link" href="explore.html"><ArrowLeftIcon size={14} /> 返回探索</a>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <div className="avatar">旅</div>
+          </div>
+        </header>
+      );
+    }
+
+    function PageHead() {
+      return (
+        <div className="page-head">
+          <h1>目的地对比</h1>
+          <p>选择 2-3 个目的地，从费用、季节、签证、人群与安全多维度横向比较</p>
+        </div>
+      );
+    }
+
+    function Picker({ selected, onToggle }) {
+      const remaining = MAX_COMPARE - selected.length;
+      return (
+        <div className="picker">
+          <div className="picker-label">
+            <strong>选择目的地</strong>
+            <span className={remaining === 0 ? "full" : ""}>{remaining > 0 ? `还可添加 ${remaining} 个` : "已达上限 3 个"}</span>
+          </div>
+          <div className="picker-list">
+            {Object.values(destinations).map((d) => {
+              const active = selected.includes(d.id);
+              const disabled = !active && selected.length >= MAX_COMPARE;
+              return (
+                <button key={d.id} className={`pick-chip ${active ? "active" : ""}`} onClick={() => onToggle(d.id)} disabled={disabled}>
+                  <img src={d.img} alt={d.name} />
+                  <span>{d.name}</span>
+                  {active && <CheckIcon size={12} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function CompareRow({ label, icon, children }) {
+      return (
+        <div className="cmp-row">
+          <div className="cmp-label">
+            <span className="cmp-icon">{icon}</span>
+            {label}
+          </div>
+          {children}
+        </div>
+      );
+    }
+
+    function CellValue({ value, cellKind }) {
+      if (value === true) return <span className="cell-bool yes"><CheckIcon size={12} /></span>;
+      if (value === false) return <span className="cell-bool no"><MinusIcon size={12} /></span>;
+      if (cellKind === "rating") {
+        const n = ratingMap[value] || 3;
+        return (
+          <span className="cell-rating">
+            <span className="dots">
+              {[1, 2, 3, 4, 5].map((i) => <span key={i} className={`dot ${i <= n ? "on" : ""}`}></span>)}
+            </span>
+            <em>{value}</em>
+          </span>
+        );
+      }
+      if (cellKind === "cost") {
+        const max = 22000;
+        const pct = Math.min(100, (value / max) * 100);
+        return (
+          <span className="cell-cost">
+            <span className="cost-bar"><span className="cost-fill" style={{ width: pct + "%" }}></span></span>
+            <em>¥{value.toLocaleString()}</em>
+          </span>
+        );
+      }
+      return <span className="cell-text">{value}</span>;
+    }
+
+    function CompareTable({ list, onRemove }) {
+      const data = list.map((id) => destinations[id]);
+      return (
+        <div className="cmp-table">
+          <div className="cmp-head">
+            <div className="cmp-label">对比项</div>
+            {data.map((d) => (
+              <div key={d.id} className="cmp-head-cell">
+                <div className="cmp-dest">
+                  <img src={d.img} alt={d.name} />
+                  <div>
+                    <strong>{d.name}</strong>
+                    <span>{d.country}</span>
+                  </div>
+                  <button className="cmp-remove" onClick={() => onRemove(d.id)} aria-label={`移除 ${d.name}`}><TrashIcon size={13} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <CompareRow label="人均预算（7 天）" icon={<WalletIcon size={14} />}>
+            {data.map((d) => <CellValue key={d.id} value={d.cost} cellKind="cost" />)}
+          </CompareRow>
+          <CompareRow label="最佳季节" icon={<CalendarIcon size={14} />}>
+            {data.map((d) => <CellValue key={d.id} value={d.season} />)}
+          </CompareRow>
+          <CompareRow label="人流密度" icon={<UsersIcon size={14} />}>
+            {data.map((d) => <CellValue key={d.id} value={d.crowd} cellKind="rating" />)}
+          </CompareRow>
+          <CompareRow label="签证" icon={<MapPinIcon size={14} />}>
+            {data.map((d) => <CellValue key={d.id} value={d.visa} />)}
+          </CompareRow>
+          <CompareRow label="安全程度" icon={<ShieldIcon size={14} />}>
+            {data.map((d) => <CellValue key={d.id} value={d.safety} cellKind="rating" />)}
+          </CompareRow>
+          <CompareRow label="游玩难度" icon={<WandIcon size={14} />}>
+            {data.map((d) => <CellValue key={d.id} value={d.diff} cellKind="rating" />)}
+          </CompareRow>
+        </div>
+      );
+    }
+
+    function SummaryBanner({ list }) {
+      if (list.length < 2) return null;
+      const data = list.map((id) => destinations[id]);
+      const cheapest = data.reduce((a, b) => (a.cost < b.cost ? a : b));
+      const safest = data.reduce((a, b) => ((ratingMap[a.safety] || 0) >= (ratingMap[b.safety] || 0) ? a : b));
+      const visaFree = data.filter((d) => d.visa === "免签" || d.visa === "无需" || d.visa === "落地签");
+      return (
+        <div className="summary-banner">
+          <div className="summary-item">
+            <span className="summary-label">性价比之选</span>
+            <strong>{cheapest.name}</strong>
+            <em>¥{cheapest.cost.toLocaleString()} / 7 天</em>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">最省心</span>
+            <strong>{safest.name}</strong>
+            <em>安全度最高</em>
+          </div>
+          <div className="summary-item">
+            <span className="summary-label">免签便利</span>
+            <strong>{visaFree.length ? visaFree.map((d) => d.name).join("、") : "均需签证"}</strong>
+            <em>{visaFree.length ? "无需提前办理" : "提前准备材料"}</em>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [selected, setSelected] = useState(["kyoto", "iceland", "dali"]);
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+      }, []);
+
+      const toggle = (id) => {
+        setSelected((prev) => {
+          if (prev.includes(id)) return prev.filter((x) => x !== id);
+          if (prev.length >= MAX_COMPARE) return prev;
+          return [...prev, id];
+        });
+      };
+
+      return (
+        <div className="app">
+          <Topbar />
+          <PageHead />
+          <div className="cmp-body">
+            <Picker selected={selected} onToggle={toggle} />
+            <SummaryBanner list={selected} />
+            {selected.length === 0 ? (
+              <div className="empty-compare">
+                <MapPinIcon size={26} />
+                <h3>请选择至少 1 个目的地</h3>
+                <p>在上方点击目的地开始对比</p>
+              </div>
+            ) : selected.length === 1 ? (
+              <div className="empty-compare">
+                <PlusIcon size={26} />
+                <h3>再选 1-2 个目的地开始对比</h3>
+                <p>最多同时对比 3 个目的地</p>
+              </div>
+            ) : (
+              <CompareTable list={selected} onRemove={(id) => setSelected((prev) => prev.filter((x) => x !== id))} />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .back-link{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted-foreground);text-decoration:none;font-size:.86rem;transition:color .2s}
+    .back-link:hover{color:var(--primary)}
+
+    /* Page Head */
+    .page-head{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*7) calc(var(--spacing)*8) calc(var(--spacing)*4);display:flex;flex-direction:column;gap:calc(var(--spacing)*2)}
+    .page-head h1{font-size:1.9rem;font-weight:700;letter-spacing:-0.02em}
+    .page-head p{color:var(--muted-foreground);font-size:.92rem}
+
+    /* Body */
+    .cmp-body{max-width:1200px;margin:0 auto;padding:0 calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;gap:calc(var(--spacing)*5)}
+
+    /* Picker */
+    .picker{display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .picker-label{display:flex;justify-content:space-between;align-items:center}
+    .picker-label strong{font-size:.95rem}
+    .picker-label span{font-size:.78rem;color:var(--muted-foreground)}
+    .picker-label span.full{color:var(--chart-3);font-weight:600}
+    .picker-list{display:flex;gap:calc(var(--spacing)*2.5);flex-wrap:wrap}
+    .pick-chip{display:inline-flex;align-items:center;gap:.55rem;padding:calc(var(--spacing)*1.5) calc(var(--spacing)*2.5) calc(var(--spacing)*1.5) calc(var(--spacing)*1.5);border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--muted-foreground);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s}
+    .pick-chip img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+    .pick-chip:hover{border-color:var(--primary);color:var(--primary)}
+    .pick-chip.active{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+    .pick-chip:disabled{opacity:.45;cursor:not-allowed}
+    .pick-chip.active svg{flex:0 0 auto}
+
+    /* Summary Banner */
+    .summary-banner{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--popover)}
+    .summary-item{display:flex;flex-direction:column;gap:.2rem;padding:0 calc(var(--spacing)*3);border-left:2px solid var(--border)}
+    .summary-item:first-child{border-left:none;padding-left:0}
+    .summary-label{font-size:.72rem;color:var(--muted-foreground);font-weight:600}
+    .summary-item strong{font-size:1rem}
+    .summary-item em{font-style:normal;font-size:.78rem;color:var(--muted-foreground)}
+
+    /* Compare Table */
+    .cmp-table{border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden;background:var(--card)}
+    .cmp-head{display:flex;border-bottom:1px solid var(--border);background:var(--popover)}
+    .cmp-row{display:flex;align-items:center;border-top:1px solid var(--border)}
+    .cmp-row:first-of-type{border-top:none}
+    .cmp-label{flex:0 0 180px;display:flex;align-items:center;gap:.6rem;padding:calc(var(--spacing)*3.5) calc(var(--spacing)*4);font-size:.86rem;font-weight:600;color:var(--muted-foreground);border-right:1px solid var(--border)}
+    .cmp-icon{width:28px;height:28px;flex:0 0 28px;border-radius:var(--radius);display:grid;place-items:center;background:var(--muted);color:var(--primary)}
+    .cmp-head .cmp-label{color:var(--muted-foreground);font-size:.84rem}
+    .cmp-head-cell{flex:1;min-width:0;padding:calc(var(--spacing)*3) calc(var(--spacing)*4)}
+    .cmp-head-cell:not(:last-child){border-right:1px solid var(--border)}
+    .cmp-dest{display:flex;align-items:center;gap:calc(var(--spacing)*3)}
+    .cmp-dest img{width:44px;height:44px;border-radius:var(--radius);object-fit:cover}
+    .cmp-dest strong{display:block;font-size:.95rem}
+    .cmp-dest span{font-size:.74rem;color:var(--muted-foreground)}
+    .cmp-remove{width:28px;height:28px;margin-left:auto;flex:0 0 auto;display:grid;place-items:center;border:none;border-radius:var(--radius);background:transparent;color:var(--muted-foreground);cursor:pointer;transition:all .2s}
+    .cmp-remove:hover{background:rgba(234,67,53,.1);color:var(--chart-2)}
+    .cmp-row > .cell-rating,.cmp-row > .cell-cost,.cmp-row > .cell-text,.cmp-row > .cell-bool{flex:1;min-width:0;padding:calc(var(--spacing)*3.5) calc(var(--spacing)*4)}
+    .cmp-row > *:not(.cmp-label):not(:last-child){border-right:1px solid var(--border)}
+    .cell-text{font-size:.86rem}
+    .cell-rating{display:flex;align-items:center;gap:.7rem}
+    .dots{display:inline-flex;gap:3px}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+    .dot.on{background:var(--chart-3)}
+    .cell-rating em{font-style:normal;font-size:.76rem;color:var(--muted-foreground);white-space:nowrap}
+    .cell-cost{display:flex;align-items:center;gap:.7rem}
+    .cost-bar{flex:1;max-width:90px;height:6px;border-radius:999px;background:var(--muted);overflow:hidden}
+    .cost-fill{display:block;height:100%;border-radius:999px;background:var(--primary)}
+    .cell-cost em{font-style:normal;font-size:.82rem;font-family:var(--font-mono);white-space:nowrap}
+    .cell-bool{display:flex;align-items:center;justify-content:center}
+    .cell-bool.yes{color:var(--chart-5)}
+    .cell-bool.no{color:var(--muted-foreground)}
+
+    /* Empty */
+    .empty-compare{display:flex;flex-direction:column;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*9) calc(var(--spacing)*4);text-align:center;border:1px dashed var(--border);border-radius:calc(var(--radius) + 4px);color:var(--muted-foreground)}
+    .empty-compare h3{font-size:1.05rem;font-weight:700;color:var(--foreground)}
+    .empty-compare p{font-size:.85rem}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .cmp-body{padding-left:calc(var(--spacing)*5);padding-right:calc(var(--spacing)*5)}
+      .summary-banner{grid-template-columns:1fr;gap:calc(var(--spacing)*3)}
+      .summary-item{border-left:none;border-top:2px solid var(--border);padding:calc(var(--spacing)*2) 0 0}
+      .summary-item:first-child{border-top:none;padding-top:0}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4)}
+      .back-link{display:none}
+      .page-head{padding:calc(var(--spacing)*6) calc(var(--spacing)*4) calc(var(--spacing)*3)}
+      .cmp-body{padding:0 calc(var(--spacing)*4) calc(var(--spacing)*8)}
+      .cmp-label{flex:0 0 110px;font-size:.78rem;padding:calc(var(--spacing)*3)}
+      .cmp-head-cell{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3)}
+      .cmp-dest img{width:32px;height:32px}
+      .cell-rating{flex-direction:column;align-items:flex-start;gap:.3rem}
+      .cell-cost{flex-direction:column;align-items:flex-start;gap:.3rem}
+      .cost-bar{max-width:100%;width:100%}
+      .cmp-row > .cell-rating,.cmp-row > .cell-cost{padding:calc(var(--spacing)*3)}
+    }
+  </style>
+</body>
+</html>

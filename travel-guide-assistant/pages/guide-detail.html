@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 攻略详情</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    /* ── SVG Icons ── */
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function ArrowLeftIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>; }
+    function HeartIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>; }
+    function BookmarkIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>; }
+    function ShareIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>; }
+    function EyeIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>; }
+    function ClockIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function WalletIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>; }
+    function MapPinIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+    function SendIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>; }
+    function CalendarIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>; }
+    function TagIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>; }
+    function MessageIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>; }
+    function ArrowRightIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>; }
+
+    /* ── Guide Data（与 guides.html 对齐） ── */
+    const guideDetails = {
+      g1: {
+        id: "g1",
+        title: "关西 7 天经典家庭线路攻略",
+        author: "旅行达人小王",
+        authorAvatar: "王",
+        views: "12.4K",
+        likes: 386,
+        tag: "日本",
+        dest: "日本",
+        days: "7天",
+        time: "2026-05-18",
+        cover: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200&h=500&fit=crop",
+        summary: "带老人小孩的完美节奏：伏见稻荷、岚山、金阁寺、奈良喂鹿全收录，人均 8500 元，适合首次访日的家庭旅行。",
+        tags: ["日本", "家庭游", "7天", "美食"],
+        timeline: [
+          { day: "Day 1-2", title: "京都 · 千年古都", items: ["伏见稻荷大社：千本鸟居徒步，免费，建议清晨 8 点前避开旅行团", "岚山竹林 + 渡月桥：嵯峨野小火车需提前 3-5 天订票", "金阁寺：镜湖倒影经典机位", "锦市场夜游：体验百年市场小吃"], icon: "spots" },
+          { day: "Day 3", title: "奈良 · 与鹿共游", items: ["东大寺：世界最大木造建筑，门票 600 日元", "奈良公园喂鹿：鹿仙贝 200 日元，注意保管随身物品", "春日大社：免费参观"], icon: "spots" },
+          { day: "Day 4-5", title: "大阪 · 城市漫游", items: ["大阪城公园：天守阁 600 日元，樱花季绝美", "道顿堀美食街：章鱼烧、大阪烧、蟹道乐", "心斋桥购物", "环球影城（可选，门票约 8000 日元）"], icon: "spots" },
+          { day: "Day 6", title: "神户 · 异国风情", items: ["北野异人馆：欧式建筑群", "神户牛肉午餐：午餐套餐比晚餐便宜 40%", "六甲山夜景"], icon: "spots" },
+          { day: "Day 7", title: "返程", items: ["上午临空城奥特莱斯补货", "下午前往关西机场"], icon: "spots" }
+        ],
+        budget: [
+          { item: "往返机票", cost: "¥2,500 - 4,000" },
+          { item: "住宿（6 晚经济型）", cost: "¥1,800 - 3,600" },
+          { item: "餐饮（7 天）", cost: "¥1,050 - 2,100" },
+          { item: "交通 + 门票", cost: "¥800 - 1,500" },
+          { item: "合计", cost: "¥8,000 - 12,000", total: true }
+        ],
+        tips: ["樱花季（3-4月）提前 2-3 个月订酒店", "购买大阪周游卡含地铁 + 20 个景点", "便利店解决早餐人均 15-25 元", "民宿比酒店便宜 30% 且可做饭"],
+        related: ["g2", "g5", "g7"],
+        comments: [
+          { name: "安安妈妈", avatar: "安", time: "2026-05-20", text: "刚好计划暑假带娃去，这篇攻略太实用了！奈良喂鹿那段提醒很贴心。" },
+          { name: "Kevin", avatar: "K", time: "2026-05-19", text: "按照这个线路走了一遍，京都很适合慢慢逛，神户牛肉强烈推荐。" },
+          { name: "旅行的意义", avatar: "旅", time: "2026-05-16", text: "请问环球影城需要单独一天吗？带 6 岁小孩值得去吗？" }
+        ]
+      },
+      g2: {
+        id: "g2",
+        title: "冰岛冬季追极光 8 天自驾攻略",
+        author: "极光猎人",
+        authorAvatar: "极",
+        views: "8.7K",
+        likes: 254,
+        tag: "欧洲",
+        dest: "冰岛",
+        days: "8天",
+        time: "2026-01-22",
+        cover: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=1200&h=500&fit=crop",
+        summary: "冬季（12-2月）冰岛 8 天自驾追极光，蓝冰洞、黑沙滩、黄金圈全攻略，四驱自驾安全要点 + 预算明细。",
+        tags: ["冰岛", "极光", "自驾", "冬季"],
+        timeline: [
+          { day: "Day 1-2", title: "雷克雅未克", items: ["蓝湖温泉：门票约 100 欧，需提前预约", "哈尔格林姆斯教堂、太阳航海者雕塑", "极光预测：关注 Vedur 云图和 Kp 指数"], icon: "spots" },
+          { day: "Day 3", title: "黄金圈", items: ["辛格维利尔国家公园：欧亚与北美板块交汇", "盖歇尔间歇泉", "黄金瀑布：冬季部分结冰"], icon: "spots" },
+          { day: "Day 4-5", title: "南岸冰川", items: ["塞里雅兰瀑布、斯科加瀑布", "黑沙滩（雷尼斯岩）：注意海浪，勿靠近", "杰古沙龙冰河湖：蓝冰洞徒步必须跟团"], icon: "spots" },
+          { day: "Day 6-7", title: "维克 / 东部", items: ["维克黑教堂", "钻石冰沙滩", "南岸光污染少，是观测极光最佳区域"], icon: "spots" },
+          { day: "Day 8", title: "返程", items: ["雷克雅未克市区购物", "前往凯夫拉维克机场"], icon: "spots" }
+        ],
+        budget: [
+          { item: "往返机票（需转机）", cost: "¥7,000 - 9,000" },
+          { item: "租车 + 油费（四驱）", cost: "¥4,000 - 6,000" },
+          { item: "住宿（8 晚）", cost: "¥6,000 - 9,000" },
+          { item: "餐饮（8 天）", cost: "¥3,000 - 4,000" },
+          { item: "温泉 + 冰洞团", cost: "¥2,000 - 3,000" },
+          { item: "合计", cost: "¥20,000 - 28,000", total: true }
+        ],
+        tips: ["冬季天黑早（15:30），合理规划白天行车", "出发前查路况 road.is，紫色路段勿行", "四驱车 + 防滑链必备", "极光看 Kp 指数和云图"],
+        related: ["g1", "g5", "g6"],
+        comments: [
+          { name: "北方来的风", avatar: "北", time: "2026-01-25", text: "刚回来，蓝冰洞真的太震撼了！一定要跟正规团。" },
+          { name: "Lily", avatar: "L", time: "2026-01-20", text: "12 月底去的话白天大概几点天亮？想参考安排行程。" }
+        ]
+      },
+      g3: {
+        id: "g3",
+        title: "大理 4 天慢生活攻略",
+        author: "背包客阿明",
+        authorAvatar: "阿",
+        views: "6.2K",
+        likes: 198,
+        tag: "国内",
+        dest: "云南",
+        days: "4天",
+        time: "2026-03-08",
+        cover: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=1200&h=500&fit=crop",
+        summary: "洱海环湖骑行、苍山云海、喜洲白族风情，3000 元搞定四天慢生活。适合想逃离城市节奏的你。",
+        tags: ["云南", "骑行", "慢生活", "国内游"],
+        timeline: [
+          { day: "Day 1", title: "大理古城", items: ["五华楼、洋人街、人民路闲逛", "城墙上看苍山日落", "入住古城内民宿（150-300 元/晚）"], icon: "spots" },
+          { day: "Day 2", title: "洱海环湖（西线）", items: ["环海西路骑行：喜洲古镇、双廊古镇", "磻溪村 S 弯、小普陀打卡", "租电动车 60-100 元/天"], icon: "spots" },
+          { day: "Day 3", title: "苍山云海", items: ["洗马潭索道（旺季需预约）", "寂照庵斋饭 20 元", "天龙八部影视城（可选）"], icon: "spots" },
+          { day: "Day 4", title: "周边探索", items: ["喜洲早市 + 白族三道茶", "崇圣寺三塔（门票 75 元）", "返程"], icon: "spots" }
+        ],
+        budget: [
+          { item: "交通（高铁/机票）", cost: "¥500 - 1,200" },
+          { item: "住宿（3 晚民宿）", cost: "¥450 - 1,200" },
+          { item: "餐饮（4 天）", cost: "¥400 - 800" },
+          { item: "门票 + 租车", cost: "¥300 - 600" },
+          { item: "合计", cost: "¥3,000 - 4,500", total: true }
+        ],
+        tips: ["高原（约 2000 米）注意防晒和补水", "午后洱海风大，骑行注意安全", "11 月-3 月淡季房价便宜 40%", "古城商业化重，喜洲更原生态"],
+        related: ["g1", "g6", "g8"],
+        comments: [
+          { name: "云朵", avatar: "云", time: "2026-03-12", text: "环海骑行太舒服了，S 弯拍日落绝了！" },
+          { name: "老茶客", avatar: "茶", time: "2026-03-09", text: "喜洲的三道茶体验值得一试，比古城便宜。" }
+        ]
+      },
+      g4: {
+        id: "g4",
+        title: "巴厘岛乌布梯田与海神庙 6 日",
+        author: "海岛控小美",
+        authorAvatar: "小",
+        views: "5.1K",
+        likes: 176,
+        tag: "海岛",
+        dest: "印尼",
+        days: "6天",
+        time: "2026-04-11",
+        cover: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&h=500&fit=crop",
+        summary: "梯田瑜伽、海神庙日落、库塔冲浪，预算 6000 元含住宿，第一次去巴厘岛看这篇就够了。",
+        tags: ["巴厘岛", "海岛", "瑜伽", "冲浪"],
+        timeline: [
+          { day: "Day 1-2", title: "乌布 · 艺术与自然", items: ["德格拉朗梯田：瑜伽冥想", "乌布皇宫 + 艺术市场", "阿勇河漂流（可选）"], icon: "spots" },
+          { day: "Day 3", title: "海神庙日落", items: ["海神庙：海上寺庙日落必打卡", "金巴兰海滩海鲜晚餐"], icon: "spots" },
+          { day: "Day 4-5", title: "库塔 · 冲浪时光", items: ["库塔海滩冲浪课程", "水明漾逛街", "天空之门（网红拍照点）"], icon: "spots" },
+          { day: "Day 6", title: "返程", items: ["上午购物，下午机场"], icon: "spots" }
+        ],
+        budget: [
+          { item: "往返机票", cost: "¥2,000 - 3,500" },
+          { item: "住宿（5 晚）", cost: "¥1,500 - 3,000" },
+          { item: "餐饮（6 天）", cost: "¥600 - 1,200" },
+          { item: "包车 + 门票", cost: "¥900 - 1,500" },
+          { item: "合计", cost: "¥5,000 - 9,000", total: true }
+        ],
+        tips: ["注意防蚊，备好驱蚊液", "寺庙参观需穿长裤或纱笼", "打车用 Grab 更便宜", "乌布换汇汇率比机场好"],
+        related: ["g1", "g2", "g8"],
+        comments: [
+          { name: "冲浪少年", avatar: "冲", time: "2026-04-15", text: "库塔冲浪课程强烈推荐，教练很耐心！" }
+        ]
+      },
+      g5: {
+        id: "g5",
+        title: "东京 5 天自由行完全指南",
+        author: "东京通",
+        authorAvatar: "东",
+        views: "9.8K",
+        likes: 312,
+        tag: "日本",
+        dest: "日本",
+        days: "5天",
+        time: "2026-02-14",
+        cover: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&h=500&fit=crop",
+        summary: "浅草寺、涩谷、秋叶原、迪士尼，第一次去东京看这篇就够了，附交通省钱攻略。",
+        tags: ["东京", "日本", "自由行", "迪士尼"],
+        timeline: [
+          { day: "Day 1", title: "浅草 · 下町风情", items: ["浅草寺 + 仲见世商店街", "晴空塔夜景"], icon: "spots" },
+          { day: "Day 2", title: "涩谷 · 潮流中心", items: ["涩谷十字路口 + 忠犬八公像", "原宿竹下通", "表参道逛街"], icon: "spots" },
+          { day: "Day 3", title: "秋叶原 · 动漫天堂", items: ["秋叶原电器街", "女仆咖啡体验（可选）", "上野公园 + 博物馆"], icon: "spots" },
+          { day: "Day 4", title: "迪士尼乐园", items: ["东京迪士尼乐园或海洋", "提前购买快速通行券"], icon: "spots" },
+          { day: "Day 5", title: "返程", items: ["银座购物", "成田/羽田机场"], icon: "spots" }
+        ],
+        budget: [
+          { item: "往返机票", cost: "¥2,500 - 4,000" },
+          { item: "住宿（4 晚）", cost: "¥1,200 - 2,800" },
+          { item: "餐饮（5 天）", cost: "¥750 - 1,500" },
+          { item: "交通 + 门票（含迪士尼）", cost: "¥1,500 - 2,500" },
+          { item: "合计", cost: "¥8,000 - 12,000", total: true }
+        ],
+        tips: ["买西瓜卡（Suica）地铁超方便", "迪士尼门票提前 2 周预订", "秋叶原周日封街变身步行街", "银座药妆店晚上 9 点后人少"],
+        related: ["g1", "g7", "g9"],
+        comments: [
+          { name: "ACG 迷", avatar: "A", time: "2026-02-18", text: "秋叶原太适合宅宅了，女仆咖啡没敢进哈哈。" },
+          { name: "米妮", avatar: "米", time: "2026-02-15", text: "迪士尼海洋的花车巡游太梦幻了！" }
+        ]
+      },
+      g6: {
+        id: "g6",
+        title: "新疆独库公路 6 天自驾",
+        author: "西域行者",
+        authorAvatar: "西",
+        views: "7.3K",
+        likes: 289,
+        tag: "国内",
+        dest: "新疆",
+        days: "6天",
+        time: "2025-10-06",
+        cover: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=500&fit=crop",
+        summary: "独库公路一日四季，那拉提草原、巴音布鲁克日落，自驾者的终极梦想，附加油站攻略。",
+        tags: ["新疆", "自驾", "独库公路", "草原"],
+        timeline: [
+          { day: "Day 1", title: "乌鲁木齐 → 独山子", items: ["取车 + 补给", "独山子大峡谷"], icon: "spots" },
+          { day: "Day 2-3", title: "独库公路北段", items: ["哈希勒根达坂（一日四季）", "那拉提草原：空中草原", "巩乃斯河谷"], icon: "spots" },
+          { day: "Day 4", title: "巴音布鲁克", items: ["九曲十八弯日落", "天鹅湖"], icon: "spots" },
+          { day: "Day 5", title: "独库南段", items: ["大小龙池", "库车大峡谷", "克孜尔千佛洞"], icon: "spots" },
+          { day: "Day 6", title: "库车 → 返程", items: ["库车老城", "飞乌鲁木齐转机"], icon: "spots" }
+        ],
+        budget: [
+          { item: "机票（往返乌鲁木齐）", cost: "¥1,500 - 3,000" },
+          { item: "租车 + 油费", cost: "¥2,000 - 3,500" },
+          { item: "住宿（5 晚）", cost: "¥1,000 - 2,000" },
+          { item: "餐饮 + 门票", cost: "¥800 - 1,500" },
+          { item: "合计", cost: "¥6,000 - 10,000", total: true }
+        ],
+        tips: ["独库公路每年 6-9 月开放", "加油站间距大，见油即加", "高海拔注意防寒", "无人机航拍需备案"],
+        related: ["g3", "g2", "g8"],
+        comments: [
+          { name: "追风的人", avatar: "追", time: "2025-10-12", text: "巴音布鲁克的日落此生难忘！" }
+        ]
+      },
+      g7: {
+        id: "g7",
+        title: "京都红叶季深度摄影攻略",
+        author: "摄影师老周",
+        authorAvatar: "周",
+        views: "4.5K",
+        likes: 231,
+        tag: "日本",
+        dest: "日本",
+        days: "5天",
+        time: "2025-11-20",
+        cover: "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=1200&h=500&fit=crop",
+        summary: "岚山竹林、琉璃光院、永观堂夜枫，机位 + 光线时间全公开，摄影爱好者的京都红叶手册。",
+        tags: ["京都", "红叶", "摄影", "秋季"],
+        timeline: [
+          { day: "Day 1", title: "东福寺 · 通天桥红叶", items: ["通天桥 800 米红叶隧道", "伏见稻荷傍晚人少"], icon: "spots" },
+          { day: "Day 2", title: "岚山 · 竹林与红叶", items: ["竹林小径清晨无人的机位", "常寂光寺红叶", "渡月桥日落"], icon: "spots" },
+          { day: "Day 3", title: "琉璃光院 · 镜面红叶", items: ["琉璃光院（限定开放）", "三千院", "宝泉院"], icon: "spots" },
+          { day: "Day 4", title: "永观堂 · 夜枫", items: ["永观堂夜枫（17:30 后）", "南禅寺", "哲学之道"], icon: "spots" },
+          { day: "Day 5", title: "返程", items: ["清水寺晨拍", "机场"], icon: "spots" }
+        ],
+        budget: [
+          { item: "机票（红叶季略贵）", cost: "¥3,000 - 4,500" },
+          { item: "住宿（4 晚）", cost: "¥1,600 - 3,600" },
+          { item: "餐饮 + 门票", cost: "¥1,000 - 2,000" },
+          { item: "合计", cost: "¥6,000 - 10,000", total: true }
+        ],
+        tips: ["红叶季 11 月中旬为峰值", "琉璃光院需提前官网预约", "夜枫光线弱需三脚架", "清晨 6-7 点是拍人少的关键"],
+        related: ["g1", "g5", "g9"],
+        comments: [
+          { name: "快门手", avatar: "快", time: "2025-11-25", text: "琉璃光院的镜面红叶拍出来太惊艳了！" }
+        ]
+      },
+      g8: {
+        id: "g8",
+        title: "泰国清迈小众寺庙与夜市",
+        author: "微笑之国",
+        authorAvatar: "微",
+        views: "3.9K",
+        likes: 145,
+        tag: "东南亚",
+        dest: "泰国",
+        days: "4天",
+        time: "2026-06-02",
+        cover: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=1200&h=500&fit=crop",
+        summary: "避开游客的小众寺庙、周日夜市、丛林飞跃，人均 3000 元，清迈慢游全记录。",
+        tags: ["泰国", "清迈", "寺庙", "夜市"],
+        timeline: [
+          { day: "Day 1", title: "古城漫步", items: ["契迪龙寺、帕辛寺", "塔佩门喂鸽子", "长康路夜市"], icon: "spots" },
+          { day: "Day 2", title: "小众寺庙", items: ["悟孟寺（森林古寺）", "素贴山双龙寺日落", "清迈大学夜市"], icon: "spots" },
+          { day: "Day 3", title: "丛林飞跃", items: ["丛林飞跃半日团", "宁曼路咖啡馆", "周日夜市（仅周日）"], icon: "spots" },
+          { day: "Day 4", title: "返程", items: ["瓦洛洛市场购物", "机场"], icon: "spots" }
+        ],
+        budget: [
+          { item: "机票（亚航）", cost: "¥800 - 1,500" },
+          { item: "住宿（3 晚）", cost: "¥450 - 900" },
+          { item: "餐饮（4 天）", cost: "¥300 - 600" },
+          { item: "丛林飞跃团", cost: "¥200 - 350" },
+          { item: "合计", cost: "¥2,500 - 4,000", total: true }
+        ],
+        tips: ["周日夜市 16:00 开始摆摊", "丛林飞跃选正规公司", "寺庙进殿需脱鞋", "Grab 打车明码标价"],
+        related: ["g4", "g6", "g3"],
+        comments: [
+          { name: "微笑", avatar: "笑", time: "2026-06-08", text: "悟孟寺太清幽了，值得专程去！" }
+        ]
+      },
+      g9: {
+        id: "g9",
+        title: "瑞士少女峰 7 天火车之旅",
+        author: "阿尔卑斯",
+        authorAvatar: "阿",
+        views: "6.8K",
+        likes: 243,
+        tag: "欧洲",
+        dest: "瑞士",
+        days: "7天",
+        time: "2025-09-15",
+        cover: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=500&fit=crop",
+        summary: "黄金列车、少女峰、因特拉肯滑翔伞，火车迷必收藏的瑞士深度路线。",
+        tags: ["瑞士", "火车", "少女峰", "阿尔卑斯"],
+        timeline: [
+          { day: "Day 1-2", title: "苏黎世 → 卢塞恩", items: ["苏黎世老城", "卢塞恩湖 + 卡佩尔廊桥", "瑞吉山小火车"], icon: "spots" },
+          { day: "Day 3", title: "黄金列车", items: ["卢塞恩 → 因特拉肯", "黄金列车全景车厢"], icon: "spots" },
+          { day: "Day 4", title: "少女峰", items: ["少女峰铁路（欧洲最高站）", "冰宫 + 斯芬克斯观景台"], icon: "spots" },
+          { day: "Day 5", title: "因特拉肯", items: ["滑翔伞体验（可选）", "布里恩茨湖游船"], icon: "spots" },
+          { day: "Day 6-7", title: "日内瓦 → 返程", items: ["日内瓦大喷泉", "联合国总部", "返程"], icon: "spots" }
+        ],
+        budget: [
+          { item: "机票（需转机）", cost: "¥4,000 - 7,000" },
+          { item: "瑞士通票（4 天）", cost: "¥2,200" },
+          { item: "住宿（6 晚）", cost: "¥4,200 - 7,200" },
+          { item: "餐饮（7 天）", cost: "¥2,100 - 4,200" },
+          { item: "合计", cost: "¥16,000 - 24,000", total: true }
+        ],
+        tips: ["瑞士通票可无限乘坐火车公交", "少女峰铁路提前订票有折扣", "餐饮贵，超市买水喝", "滑翔伞需天气好才能飞"],
+        related: ["g5", "g2", "g7"],
+        comments: [
+          { name: "轨道迷", avatar: "轨", time: "2025-09-20", text: "黄金列车坐窗边，一路都是明信片！" }
+        ]
+      }
+    };
+
+    const defaultGuide = "g1";
+    const allGuideBriefs = [
+      { id: "g1", title: "关西 7 天经典家庭线路攻略", cover: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=240&fit=crop", views: "12.4K" },
+      { id: "g2", title: "冰岛冬季追极光 8 天自驾攻略", cover: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=400&h=240&fit=crop", views: "8.7K" },
+      { id: "g3", title: "大理 4 天慢生活攻略", cover: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=400&h=240&fit=crop", views: "6.2K" },
+      { id: "g4", title: "巴厘岛乌布梯田与海神庙 6 日", cover: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400&h=240&fit=crop", views: "5.1K" },
+      { id: "g5", title: "东京 5 天自由行完全指南", cover: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=240&fit=crop", views: "9.8K" },
+      { id: "g6", title: "新疆独库公路 6 天自驾", cover: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=240&fit=crop", views: "7.3K" },
+      { id: "g7", title: "京都红叶季深度摄影攻略", cover: "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=400&h=240&fit=crop", views: "4.5K" },
+      { id: "g8", title: "泰国清迈小众寺庙与夜市", cover: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=400&h=240&fit=crop", views: "3.9K" },
+      { id: "g9", title: "瑞士少女峰 7 天火车之旅", cover: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=240&fit=crop", views: "6.8K" }
+    ];
+
+    /* ── Components ── */
+    function Topbar() {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <a className="back-link" href="guides.html"><ArrowLeftIcon size={14} /> 返回攻略库</a>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <div className="avatar">旅</div>
+          </div>
+        </header>
+      );
+    }
+
+    function ArticleHead({ guide }) {
+      const [liked, setLiked] = useState(false);
+      const [saved, setSaved] = useState(false);
+      return (
+        <div className="article-head">
+          <div className="cover-wrap">
+            <img className="cover" src={guide.cover} alt={guide.title} />
+            <div className="cover-overlay"></div>
+            <div className="cover-content">
+              <div className="head-tags">
+                <span className="head-tag">{guide.tag}</span>
+                <span className="head-tag"><MapPinIcon size={12} /> {guide.dest}</span>
+              </div>
+              <h1 className="head-title">{guide.title}</h1>
+              <div className="head-author">
+                <div className="author-avatar">{guide.authorAvatar}</div>
+                <div className="author-info">
+                  <strong>{guide.author}</strong>
+                  <span><CalendarIcon size={12} /> {guide.time} · {guide.days}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="head-actions">
+            <div className="head-stats">
+              <span><EyeIcon size={14} /> {guide.views}</span>
+              <span><HeartIcon size={14} /> {liked ? guide.likes + 1 : guide.likes}</span>
+            </div>
+            <div className="action-buttons">
+              <button className={`ghost-btn ${liked ? "active" : ""}`} onClick={() => setLiked(!liked)}>
+                <HeartIcon size={14} /> {liked ? "已赞" : "点赞"}
+              </button>
+              <button className={`ghost-btn ${saved ? "active" : ""}`} onClick={() => setSaved(!saved)}>
+                <BookmarkIcon size={14} /> {saved ? "已收藏" : "收藏"}
+              </button>
+              <button className="ghost-btn"><ShareIcon size={14} /> 分享</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function TimelineSection({ guide }) {
+      return (
+        <section className="content-section">
+          <div className="section-title">
+            <h2>行程时间线</h2>
+            <span className="section-badge"><WalletIcon size={12} /> {guide.days}</span>
+          </div>
+          <div className="timeline">
+            {guide.timeline.map((item, i) => (
+              <div key={i} className="timeline-item">
+                <div className="timeline-marker">
+                  <div className="marker-dot"></div>
+                  {i < guide.timeline.length - 1 && <div className="marker-line"></div>}
+                </div>
+                <div className="timeline-card">
+                  <div className="timeline-day">{item.day}</div>
+                  <div className="timeline-title">{item.title}</div>
+                  <ul className="timeline-items">
+                    {item.items.map((it, j) => <li key={j}>{it}</li>)}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function BudgetSection({ guide }) {
+      return (
+        <section className="content-section">
+          <div className="section-title">
+            <h2>费用明细</h2>
+            <span className="section-badge">人均</span>
+          </div>
+          <div className="budget-table">
+            {guide.budget.map((row, i) => (
+              <div key={i} className={`budget-row ${row.total ? "total" : ""}`}>
+                <span>{row.item}</span>
+                <strong>{row.cost}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function TipsSection({ guide }) {
+      return (
+        <section className="content-section">
+          <div className="section-title">
+            <h2>实用贴士</h2>
+          </div>
+          <div className="tips-grid">
+            {guide.tips.map((tip, i) => (
+              <div key={i} className="tip-card">
+                <span className="tip-num">{String(i + 1).padStart(2, "0")}</span>
+                <p>{tip}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function CommentSection({ guide }) {
+      const [comments, setComments] = useState(guide.comments);
+      const [input, setInput] = useState("");
+      const handleSubmit = () => {
+        if (!input.trim()) return;
+        const newComment = {
+          name: "我",
+          avatar: "我",
+          time: "刚刚",
+          text: input.trim()
+        };
+        setComments([...comments, newComment]);
+        setInput("");
+      };
+      return (
+        <section className="content-section">
+          <div className="section-title">
+            <h2>评论 ({comments.length})</h2>
+          </div>
+          <div className="comment-input-row">
+            <div className="comment-input-box">
+              <MessageIcon size={16} />
+              <input
+                placeholder="写下你的看法或问题..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
+              />
+            </div>
+            <button className="primary-btn" onClick={handleSubmit} disabled={!input.trim()}>
+              <SendIcon size={14} /> 发布
+            </button>
+          </div>
+          <div className="comment-list">
+            {comments.map((c, i) => (
+              <div key={i} className="comment-item">
+                <div className="comment-avatar">{c.avatar}</div>
+                <div className="comment-body">
+                  <div className="comment-meta">
+                    <strong>{c.name}</strong>
+                    <span>{c.time}</span>
+                  </div>
+                  <p>{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function RelatedSection({ guide }) {
+      return (
+        <section className="related-section">
+          <div className="section-title">
+            <h2>相关攻略</h2>
+          </div>
+          <div className="related-grid">
+            {guide.related.map((id) => {
+              const brief = allGuideBriefs.find((g) => g.id === id);
+              if (!brief) return null;
+              return (
+                <article key={id} className="related-card" onClick={() => window.TravelMate.utils.go("guide-detail.html", { id })} role="link" tabIndex="0">
+                  <img className="related-cover" src={brief.cover} alt={brief.title} loading="lazy" />
+                  <div className="related-body">
+                    <h3>{brief.title}</h3>
+                    <span className="related-views"><EyeIcon size={12} /> {brief.views}</span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      );
+    }
+
+    function Sidebar({ guide }) {
+      return (
+        <aside className="sidebar">
+          <div className="sidebar-card ai-card">
+            <div className="ai-card-icon"><SparkleIcon size={18} /></div>
+            <h3>用 AI 定制</h3>
+            <p>根据这篇攻略的灵感，让 AI 为你生成专属行程</p>
+            <button className="primary-btn" onClick={() => window.TravelMate.utils.go("assistant.html", { query: `参考${guide.dest}攻略，帮我规划${guide.days}行程` })}>
+              开始规划 <ArrowRightIcon size={14} />
+            </button>
+          </div>
+          <div className="sidebar-card">
+            <h3 className="sidebar-title">攻略信息</h3>
+            <div className="sidebar-rows">
+              <div className="sidebar-row"><span>目的地</span><strong>{guide.dest}</strong></div>
+              <div className="sidebar-row"><span>行程天数</span><strong>{guide.days}</strong></div>
+              <div className="sidebar-row"><span>发布时间</span><strong>{guide.time}</strong></div>
+              <div className="sidebar-row"><span>阅读量</span><strong>{guide.views}</strong></div>
+            </div>
+          </div>
+          <div className="sidebar-card">
+            <h3 className="sidebar-title">标签</h3>
+            <div className="tag-list">
+              {guide.tags.map((t, i) => (
+                <span key={i} className="side-tag"><TagIcon size={11} /> {t}</span>
+              ))}
+            </div>
+          </div>
+        </aside>
+      );
+    }
+
+    function App() {
+      const guideId = window.TravelMate.utils.getQueryParam("id") || defaultGuide;
+      const guide = guideDetails[guideId] || guideDetails[defaultGuide];
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+        document.title = `${guide.title} — TravelMate`;
+      }, [guide]);
+
+      return (
+        <div className="app">
+          <Topbar />
+          <ArticleHead guide={guide} />
+          <div className="detail-layout">
+            <main className="detail-main">
+              <div className="summary-card">
+                <p>{guide.summary}</p>
+              </div>
+              <TimelineSection guide={guide} />
+              <BudgetSection guide={guide} />
+              <TipsSection guide={guide} />
+              <CommentSection guide={guide} />
+            </main>
+            <Sidebar guide={guide} />
+          </div>
+          <RelatedSection guide={guide} />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .back-link{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted-foreground);text-decoration:none;font-size:.86rem;transition:color .2s}
+    .back-link:hover{color:var(--primary)}
+    .icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+    /* Article Head */
+    .article-head{border-bottom:1px solid var(--border)}
+    .cover-wrap{position:relative;height:380px;overflow:hidden}
+    .cover{width:100%;height:100%;object-fit:cover;display:block}
+    .cover-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,17,21,.12) 0%,rgba(14,17,21,.78) 100%)}
+    .cover-content{position:absolute;left:0;right:0;bottom:0;padding:calc(var(--spacing)*7) calc(var(--spacing)*8);display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .head-tags{display:flex;gap:calc(var(--spacing)*2)}
+    .head-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .7rem;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(6px);color:#fff;font-size:.78rem;font-weight:600}
+    .head-title{color:#fff;font-size:1.9rem;font-weight:700;letter-spacing:-0.02em;max-width:760px;line-height:1.3}
+    .head-author{display:flex;align-items:center;gap:calc(var(--spacing)*3)}
+    .author-avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700;font-size:.9rem}
+    .author-info{display:flex;flex-direction:column;gap:.1rem}
+    .author-info strong{color:#fff;font-size:.9rem}
+    .author-info span{display:inline-flex;align-items:center;gap:.3rem;color:rgba(255,255,255,.8);font-size:.76rem}
+    .head-actions{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*3) calc(var(--spacing)*8);display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*3);flex-wrap:wrap}
+    .head-stats{display:flex;gap:calc(var(--spacing)*5);color:var(--muted-foreground);font-size:.84rem}
+    .head-stats span{display:inline-flex;align-items:center;gap:.35rem}
+    .action-buttons{display:flex;gap:calc(var(--spacing)*2)}
+    .ghost-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.2) calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--foreground);font-weight:600;font-size:.82rem;cursor:pointer;transition:all .2s}
+    .ghost-btn:hover{background:var(--primary-soft)}
+    .ghost-btn.active{border-color:var(--chart-2);color:var(--chart-2);background:rgba(234,67,53,.06)}
+    .ghost-btn.active.saved{border-color:var(--chart-3);color:var(--chart-3);background:rgba(251,188,5,.08)}
+
+    /* Detail Layout */
+    .detail-layout{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*6) calc(var(--spacing)*8) calc(var(--spacing)*4);display:grid;grid-template-columns:1fr 320px;gap:calc(var(--spacing)*7);align-items:start}
+    .detail-main{min-width:0;display:flex;flex-direction:column;gap:calc(var(--spacing)*6)}
+
+    /* Summary */
+    .summary-card{border-left:3px solid var(--primary);background:var(--popover);border-radius:0 var(--radius) var(--radius) 0;padding:calc(var(--spacing)*4) calc(var(--spacing)*5)}
+    .summary-card p{font-size:.92rem;line-height:1.7;color:var(--foreground)}
+
+    /* Sections */
+    .content-section{display:flex;flex-direction:column;gap:calc(var(--spacing)*4)}
+    .section-title{display:flex;justify-content:space-between;align-items:center}
+    .section-title h2{font-size:1.25rem;font-weight:700}
+    .section-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .7rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.76rem;font-weight:600}
+
+    /* Timeline */
+    .timeline{display:flex;flex-direction:column}
+    .timeline-item{display:flex;gap:calc(var(--spacing)*4)}
+    .timeline-marker{display:flex;flex-direction:column;align-items:center;flex:0 0 16px}
+    .marker-dot{width:12px;height:12px;border-radius:50%;background:var(--primary);border:3px solid var(--background);box-shadow:0 0 0 1px var(--primary);margin-top:6px}
+    .marker-line{flex:1;width:2px;background:var(--border);margin:calc(var(--spacing)*1) 0}
+    .timeline-card{flex:1;padding-bottom:calc(var(--spacing)*5);min-width:0}
+    .timeline-day{display:inline-block;padding:.25rem .7rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-weight:700;font-size:.74rem;font-family:var(--font-mono);margin-bottom:calc(var(--spacing)*2)}
+    .timeline-title{font-size:1rem;font-weight:700;margin-bottom:calc(var(--spacing)*2)}
+    .timeline-items{list-style:none;display:flex;flex-direction:column;gap:calc(var(--spacing)*2)}
+    .timeline-items li{position:relative;padding-left:calc(var(--spacing)*3);font-size:.86rem;color:var(--muted-foreground);line-height:1.6}
+    .timeline-items li::before{content:"•";position:absolute;left:0;color:var(--primary)}
+
+    /* Budget */
+    .budget-table{border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden}
+    .budget-row{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*3) calc(var(--spacing)*4);border-top:1px solid var(--border);font-size:.88rem}
+    .budget-row:first-child{border-top:none}
+    .budget-row span{color:var(--muted-foreground)}
+    .budget-row.total{background:var(--muted);border-top:2px solid var(--primary)}
+    .budget-row.total span,.budget-row.total strong{color:var(--muted-foreground);font-weight:700}
+
+    /* Tips */
+    .tips-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:calc(var(--spacing)*3)}
+    .tip-card{display:flex;gap:calc(var(--spacing)*3);align-items:flex-start;padding:calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+    .tip-num{flex:0 0 auto;font-family:var(--font-mono);font-size:.95rem;font-weight:700;color:var(--primary);opacity:.4}
+    .tip-card p{font-size:.84rem;line-height:1.55;color:var(--foreground)}
+
+    /* Comments */
+    .comment-input-row{display:flex;gap:calc(var(--spacing)*3);align-items:center}
+    .comment-input-box{flex:1;display:flex;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*2.8) calc(var(--spacing)*3.5);border:1px solid var(--input);border-radius:999px;background:var(--popover);transition:border-color .2s,box-shadow .2s}
+    .comment-input-box:focus-within{border-color:var(--ring);box-shadow:0 0 0 3px rgba(66,133,244,.12)}
+    .comment-input-box svg{color:var(--muted-foreground);flex:0 0 auto}
+    .comment-input-box input{flex:1;border:none;outline:none;background:transparent;color:var(--foreground);font-size:.88rem}
+    .comment-input-box input::placeholder{color:var(--muted-foreground)}
+    .primary-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4);border:none;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.84rem;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+    .primary-btn:disabled{opacity:.4;cursor:default}
+    .comment-list{display:flex;flex-direction:column;gap:calc(var(--spacing)*4)}
+    .comment-item{display:flex;gap:calc(var(--spacing)*3);align-items:flex-start}
+    .comment-avatar{width:36px;height:36px;flex:0 0 36px;border-radius:50%;display:grid;place-items:center;background:var(--muted);color:var(--foreground);font-weight:700;font-size:.8rem}
+    .comment-body{flex:1;min-width:0}
+    .comment-meta{display:flex;align-items:center;gap:calc(var(--spacing)*3);margin-bottom:.3rem}
+    .comment-meta strong{font-size:.86rem}
+    .comment-meta span{font-size:.74rem;color:var(--muted-foreground)}
+    .comment-body p{font-size:.86rem;color:var(--muted-foreground);line-height:1.6}
+
+    /* Sidebar */
+    .sidebar{position:sticky;top:84px;display:flex;flex-direction:column;gap:calc(var(--spacing)*4)}
+    .sidebar-card{border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);padding:calc(var(--spacing)*4)}
+    .ai-card{display:flex;flex-direction:column;gap:calc(var(--spacing)*2.5);background:linear-gradient(180deg,var(--muted) 0%,var(--card) 100%)}
+    .ai-card-icon{width:44px;height:44px;border-radius:var(--radius);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground)}
+    .ai-card h3{font-size:1rem;font-weight:700}
+    .ai-card p{font-size:.82rem;color:var(--muted-foreground);line-height:1.55}
+    .ai-card .primary-btn{align-self:flex-start}
+    .sidebar-title{font-size:.88rem;font-weight:700;margin-bottom:calc(var(--spacing)*3)}
+    .sidebar-rows{display:flex;flex-direction:column}
+    .sidebar-row{display:flex;justify-content:space-between;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*2.5) 0;border-top:1px solid var(--border);font-size:.84rem}
+    .sidebar-row:first-child{border-top:none}
+    .sidebar-row span{color:var(--muted-foreground)}
+    .tag-list{display:flex;flex-wrap:wrap;gap:calc(var(--spacing)*2)}
+    .side-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .65rem;border-radius:999px;background:var(--muted);color:var(--foreground);font-size:.76rem}
+
+    /* Related */
+    .related-section{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*5) calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;gap:calc(var(--spacing)*4);border-top:1px solid var(--border)}
+    .related-section .section-title h2{font-size:1.25rem}
+    .related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*4)}
+    .related-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden;cursor:pointer;transition:border-color .2s}
+    .related-card:hover{border-color:var(--ring)}
+    .related-cover{width:100%;height:130px;object-fit:cover;display:block}
+    .related-body{padding:calc(var(--spacing)*3)}
+    .related-body h3{font-size:.88rem;font-weight:600;line-height:1.4;margin-bottom:calc(var(--spacing)*2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .related-views{display:inline-flex;align-items:center;gap:.3rem;font-size:.74rem;color:var(--muted-foreground)}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .detail-layout{grid-template-columns:1fr;padding:calc(var(--spacing)*5)}
+      .sidebar{position:static;flex-direction:row;flex-wrap:wrap}
+      .sidebar-card{flex:1;min-width:220px}
+      .head-actions{padding:calc(var(--spacing)*3) calc(var(--spacing)*5)}
+      .related-section{padding:calc(var(--spacing)*5)}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4)}
+      .cover-wrap{height:300px}
+      .cover-content{padding:calc(var(--spacing)*5)}
+      .head-title{font-size:1.4rem}
+      .back-link{display:none}
+      .detail-layout{padding:calc(var(--spacing)*4)}
+      .head-actions{padding:calc(var(--spacing)*3) calc(var(--spacing)*4)}
+      .tips-grid,.related-grid{grid-template-columns:1fr}
+      .comment-input-row{flex-direction:column;align-items:stretch}
+    }
+  </style>
+</body>
+</html>

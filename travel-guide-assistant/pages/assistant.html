@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — AI 旅行助手</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="../node_modules/react/umd/react.development.js"></script>
+  <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+  <script src="../shared/assistant-response.js"></script>
+  <script src="../shared/components.js"></script>
+  <script src="../node_modules/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const { detectResponseTopic, cleanMarkdownForDisplay } = window.TravelMate.assistantResponses;
+
+    /* ── SVG Icons ── */
+    function SendIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>; }
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function ArrowLeftIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>; }
+    function ArrowRightIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>; }
+    function CheckIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>; }
+    function BookmarkIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>; }
+    function ClockIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function MapPinIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+    function WalletIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>; }
+    function ChevronDownIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>; }
+    function LightbulbIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>; }
+    function QuoteIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>; }
+    function HistoryIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>; }
+
+    /* ── Data ── */
+    const suggestionQuestions = [
+      "五一去日本玩7天，预算1万，有什么推荐？",
+      "冰岛冬季自驾安全吗？",
+      "去大理玩几天合适？预算多少？",
+      "日本签证需要什么材料？"
+    ];
+
+    const SESSION_KEY = "travelmate-sessions";
+    const CHAT_SESSION_KEY = "travelmate-chat-session-id";
+    const CHAT_HISTORY_KEY = "travelmate-chat-history";
+
+    /* ── 本地存储：会话历史 ── */
+    function loadSessions() {
+      try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || []; } catch (e) { return []; }
+    }
+    function saveSessions(sessions) {
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessions.slice(0, 20))); } catch (e) { /* ignore */ }
+    }
+    function createChatSessionId() {
+      const id = (window.crypto && typeof window.crypto.randomUUID === "function")
+        ? window.crypto.randomUUID()
+        : "session-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      try { localStorage.setItem(CHAT_SESSION_KEY, id); } catch (e) { /* ignore */ }
+      return id;
+    }
+    function loadChatSessionId() {
+      try {
+        const existing = localStorage.getItem(CHAT_SESSION_KEY);
+        return existing || createChatSessionId();
+      } catch (e) {
+        return "session-" + Date.now();
+      }
+    }
+    function loadChatHistory() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || "[]");
+        return Array.isArray(stored) ? stored.slice(-40) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    function saveChatHistory(messages) {
+      try { localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(messages.slice(-40))); } catch (e) { /* ignore */ }
+    }
+    function historyForRequest(messages) {
+      return messages
+        .filter((message) => message && (message.role === "user" || message.role === "bot") && message.text)
+        .slice(-6)
+        .map((message) => ({
+          role: message.role === "bot" ? "assistant" : "user",
+          content: String(message.text).slice(0, 8000)
+        }));
+    }
+
+    /* ── Components ── */
+    function Topbar({ onHome }) {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <span className="topbar-page-tag">AI 旅行助手</span>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <a className="home-link" href="home.html">返回首页</a>
+          </div>
+        </header>
+      );
+    }
+
+    function EmptyState({ onAsk }) {
+      return (
+        <div className="empty-state">
+          <div className="empty-icon"><SparkleIcon size={28} /></div>
+          <h2>开始规划你的旅程</h2>
+          <p>描述你的旅行想法，AI 助手将为你生成个性化行程、预算方案与实用贴士</p>
+          <div className="suggestion-list">
+            {suggestionQuestions.map((q) => (
+              <button key={q} className="suggestion-btn" onClick={() => onAsk(q)}>
+                <QuoteIcon size={14} />
+                <span>{q}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function isLikelyPlanRequest(text) {
+      return /(?:想|准备|打算)?去[\u4e00-\u9fff]{2,8}(?:玩|旅游|旅行|逛)|行程|规划|路线|几天|预算/.test(text);
+    }
+
+    function responseTopicIcon(topic) {
+      if (topic === "visa") return <CheckIcon size={15} />;
+      if (topic === "weather") return <SunIcon size={15} />;
+      if (topic === "budget") return <WalletIcon size={15} />;
+      if (topic === "transport") return <ClockIcon size={15} />;
+      if (topic === "itinerary") return <MapPinIcon size={15} />;
+      return <SparkleIcon size={15} />;
+    }
+
+    function ChatBubble({ msg, isStreaming }) {
+      if (msg.role === "user") {
+        return (
+          <div className="chat-row user">
+            <div className="bubble user">{msg.text}</div>
+          </div>
+        );
+      }
+      return (
+        <div className="chat-row bot">
+          <div className="bot-avatar"><SparkleIcon size={14} /></div>
+          <div className="bubble bot">
+            {msg.text ? (
+              <span className="plain-text-output">
+                {msg.text}
+                {isStreaming && <span className="stream-cursor" aria-hidden="true" />}
+              </span>
+            ) : msg.itinerary ? (
+              <span className="plain-text-output">行程已生成，请查看右侧的结构化行程预览。</span>
+            ) : (
+              <span className="typing-dots"><span /> <span /> <span /></span>
+            )}
+            {msg.citations && msg.citations.length > 0 && (
+              <div className="citations">
+                <div className="citations-label">参考来源</div>
+                {msg.citations.map((c, i) => (
+                  <a key={i} className="citation-chip" href="guides.html" title={c.title}>
+                    <QuoteIcon size={12} /> {c.title}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function ItineraryCard({ itinerary, onSave, saving, savedTripId }) {
+      const [openDays, setOpenDays] = useState({});
+      const toggleDay = (day) => setOpenDays((prev) => ({ ...prev, [day]: !prev[day] }));
+      const allOpen = Object.keys(openDays).length === itinerary.day_plans.length && itinerary.day_plans.length > 0;
+      const toggleAll = () => {
+        if (allOpen) { setOpenDays({}); }
+        else {
+          const all = {};
+          itinerary.day_plans.forEach((d) => { all[d.day] = true; });
+          setOpenDays(all);
+        }
+      };
+      const budgetPerDay = itinerary.total_budget && itinerary.days ? (itinerary.total_budget / itinerary.days) : null;
+
+      return (
+        <div className="itinerary-card" data-testid="itinerary-card">
+          <div className="itinerary-head">
+            <div className="itinerary-title-row">
+              <div className="itinerary-title">
+                <MapPinIcon size={16} />
+                <strong>{itinerary.destination} {itinerary.days} 天行程</strong>
+              </div>
+              <button className="ghost-btn sm" onClick={toggleAll}>
+                {allOpen ? "收起全部" : "展开全部"} <ChevronDownIcon size={12} />
+              </button>
+            </div>
+            <div className="itinerary-meta">
+              <span className="meta-pill"><ClockIcon size={12} /> {itinerary.days} 天</span>
+              <span className="meta-pill"><WalletIcon size={12} /> {itinerary.total_budget ? "¥" + itinerary.total_budget.toLocaleString() + " /人" : "预算待估算"}</span>
+            </div>
+          </div>
+
+          {itinerary.day_plans.length === 0 ? (
+            <div className="empty-itinerary">暂无行程安排，尝试更具体地描述目的地和天数</div>
+          ) : (
+            <div className="day-list">
+              {itinerary.day_plans.map((d) => {
+                const open = !!openDays[d.day];
+                return (
+                  <div key={d.day} className={`day-item ${open ? "open" : ""}`}>
+                    <button className="day-head" onClick={() => toggleDay(d.day)}>
+                      <span className="day-badge">D{d.day}</span>
+                      <span className="day-title">{d.title}</span>
+                      <span className="day-chevron"><ChevronDownIcon size={14} /></span>
+                    </button>
+                    {open && (
+                      <div className="day-body">
+                        <ul className="activity-list">
+                          {d.activities.map((a, i) => <li key={i}>{a}</li>)}
+                        </ul>
+                        <div className="day-foot">
+                          <span>交通：{d.transport || "步行"}</span>
+                          {d.budget != null && <span>预算：¥{d.budget.toLocaleString()}</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {itinerary.tips && itinerary.tips.length > 0 && (
+            <div className="itinerary-tips">
+              <div className="tips-label"><LightbulbIcon size={12} /> 旅行贴士</div>
+              <ul>
+                {itinerary.tips.map((t, i) => <li key={i}>{t}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {budgetPerDay && (
+            <div className="budget-summary">
+              <div className="budget-row">
+                <span>日均预算</span>
+                <strong>¥{budgetPerDay.toFixed(0)}</strong>
+              </div>
+              <div className="budget-row">
+                <span>总预算（7 天基准）</span>
+                <strong>¥{itinerary.total_budget.toLocaleString()}</strong>
+              </div>
+            </div>
+          )}
+
+          <div className="itinerary-actions">
+            <button className="primary-btn" onClick={onSave} disabled={saving || Boolean(savedTripId)}>
+              <BookmarkIcon size={14} /> {savedTripId ? "已保存" : saving ? "保存中..." : "保存行程"}
+            </button>
+            {savedTripId && (
+              <button className="ghost-btn" onClick={() => window.TravelMate.utils.go("planner.html", { tripId: savedTripId })}>
+                打开已保存行程
+              </button>
+            )}
+            <button className="ghost-btn" onClick={() => {
+              try {
+                const draft = {
+                  title: `${itinerary.destination} ${itinerary.days} 天行程`,
+                  destination: itinerary.destination,
+                  days: itinerary.days,
+                  totalBudget: itinerary.total_budget || 8500,
+                  tips: itinerary.tips || [],
+                  dayPlans: (itinerary.day_plans || []).map((d) => ({
+                    day: d.day,
+                    title: d.title || `第 ${d.day} 天`,
+                    items: (d.activities || []).map((a, i) => ({
+                      id: `${d.day}-${i}`,
+                      time: "10:00",
+                      text: a,
+                      cat: "ticket",
+                      budget: Math.round((d.budget || 0) / Math.max(d.activities.length, 1))
+                    }))
+                  }))
+                };
+                localStorage.setItem("travelmate-planner-draft", JSON.stringify(draft));
+                window.TravelMate.utils.go("planner.html");
+              } catch (e) { alert("打开规划器失败"); }
+            }}>编辑行程</button>
+            <button className="ghost-btn">分享</button>
+          </div>
+        </div>
+      );
+    }
+
+    function ChatPanel({ messages, onSend, streaming }) {
+      const [input, setInput] = useState("");
+      const scrollRef = useRef(null);
+
+      useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }, [messages, streaming]);
+
+      const handleSend = () => {
+        if (!input.trim() || streaming) return;
+        onSend(input.trim());
+        setInput("");
+      };
+
+      return (
+        <div className="chat-panel">
+          <div className="chat-messages" ref={scrollRef}>
+            {messages.length === 0 ? (
+              <EmptyState onAsk={(q) => { setInput(q); onSend(q); }} />
+            ) : (
+              messages.map((m, i) => (
+                <ChatBubble
+                  key={i}
+                  msg={m}
+                  isStreaming={streaming && i === messages.length - 1 && m.role === "bot"}
+                />
+              ))
+            )}
+          </div>
+          <div className="chat-input-bar">
+            <input
+              className="chat-input"
+              placeholder="描述你的旅行计划，如：五一去日本玩7天，预算1万"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+              disabled={streaming}
+            />
+            <button className="send-btn" onClick={handleSend} disabled={streaming || !input.trim()} aria-label="发送">
+              <SendIcon size={16} />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [messages, setMessages] = useState(loadChatHistory);
+      const [sessionId, setSessionId] = useState(loadChatSessionId);
+      const [streaming, setStreaming] = useState(false);
+      const [itinerary, setItinerary] = useState(null);
+      const [sessions, setSessions] = useState(loadSessions);
+      const [savedTip, setSavedTip] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [savedTripId, setSavedTripId] = useState(null);
+      const [saveError, setSaveError] = useState("");
+      const [planningPreview, setPlanningPreview] = useState(false);
+      const streamTextRef = useRef("");
+      const streamDisplayTextRef = useRef("");
+      const streamTargetCharsRef = useRef([]);
+      const streamDisplayCharsRef = useRef([]);
+      const streamTimerRef = useRef(null);
+      const streamDoneRef = useRef(false);
+      const streamFinishedRef = useRef(false);
+      const streamMsgIndexRef = useRef(-1);
+
+      useEffect(() => {
+        saveChatHistory(messages);
+      }, [messages]);
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+        const q = window.TravelMate.utils.getQueryParam("query");
+        if (q) sendMessage(q);
+      }, []);
+
+      function clearStreamTimer() {
+        if (streamTimerRef.current !== null) {
+          clearTimeout(streamTimerRef.current);
+          streamTimerRef.current = null;
+        }
+      }
+
+      function updateStreamMessage(text, citations) {
+        setMessages((prev) => {
+          const next = [...prev];
+          const idx = streamMsgIndexRef.current;
+          if (idx >= 0 && idx < next.length) {
+            next[idx] = {
+              ...next[idx],
+              text,
+              citations: citations && citations.length ? citations : next[idx].citations || []
+            };
+          }
+          return next;
+        });
+      }
+
+      function finishStream(question) {
+        if (streamFinishedRef.current || !streamDoneRef.current) return;
+        if (streamDisplayCharsRef.current.length < streamTargetCharsRef.current.length) return;
+        streamFinishedRef.current = true;
+        clearStreamTimer();
+        setStreaming(false);
+        setPlanningPreview(false);
+        const newSession = {
+          id: Date.now(),
+          question,
+          time: new Date().toLocaleString("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })
+        };
+        const updated = [newSession, ...loadSessions()];
+        saveSessions(updated);
+        setSessions(updated);
+      }
+
+      function revealNextCharacter(question) {
+        if (streamFinishedRef.current) return;
+        const target = streamTargetCharsRef.current;
+        const displayed = streamDisplayCharsRef.current;
+        if (displayed.length > target.length) {
+          displayed.length = target.length;
+        }
+        if (displayed.length < target.length) {
+          displayed.push(target[displayed.length]);
+          streamDisplayTextRef.current = displayed.join("");
+          updateStreamMessage(streamDisplayTextRef.current);
+          streamTimerRef.current = setTimeout(() => revealNextCharacter(question), 24);
+          return;
+        }
+        streamTimerRef.current = null;
+        finishStream(question);
+      }
+
+      function startReveal(question) {
+        if (streamTimerRef.current === null) revealNextCharacter(question);
+      }
+
+      function sendMessage(text) {
+        clearStreamTimer();
+        const userMsg = { role: "user", text: text };
+        const botMsg = { role: "bot", text: "", citations: [], topic: detectResponseTopic(text), itinerary: null };
+        const newMessages = [...messages, userMsg, botMsg];
+        setMessages(newMessages);
+        setStreaming(true);
+        setItinerary(null);
+        setSavedTip(false);
+        setSavedTripId(null);
+        setSaveError("");
+        setPlanningPreview(isLikelyPlanRequest(text));
+        streamTextRef.current = "";
+        streamDisplayTextRef.current = "";
+        streamTargetCharsRef.current = [];
+        streamDisplayCharsRef.current = [];
+        streamDoneRef.current = false;
+        streamFinishedRef.current = false;
+        streamMsgIndexRef.current = newMessages.length - 1;
+
+        window.TravelMate.api.chatStream(
+          text,
+          {
+            onMessage: (payload) => {
+              streamTextRef.current += payload.text || "";
+              streamTargetCharsRef.current = Array.from(cleanMarkdownForDisplay(streamTextRef.current));
+              const citations = payload.citations || [];
+              updateStreamMessage(streamDisplayTextRef.current, citations);
+              startReveal(text);
+            },
+            onItinerary: (payload) => {
+              setItinerary(payload);
+              setMessages((prev) => {
+                const next = [...prev];
+                const idx = streamMsgIndexRef.current;
+                if (idx >= 0 && idx < next.length) {
+                  next[idx] = { ...next[idx], itinerary: payload, citations: payload.citations || next[idx].citations || [] };
+                }
+                return next;
+              });
+            },
+            onDone: () => {
+              streamDoneRef.current = true;
+              if (!streamTargetCharsRef.current.length) {
+                streamTargetCharsRef.current = Array.from(cleanMarkdownForDisplay("已完成回答"));
+              }
+              startReveal(text);
+            },
+            onError: (payload) => {
+              clearStreamTimer();
+              if (payload && payload.code === "session_expired") {
+                const nextSessionId = createChatSessionId();
+                setSessionId(nextSessionId);
+              }
+              const errorText = payload && payload.code === "session_expired"
+                ? "会话已过期，已为你开启新的对话。"
+                : "连接服务失败，请确认后端已启动（python -m uvicorn app.main:app --port 8000）。";
+              streamTargetCharsRef.current = Array.from(errorText);
+              streamDisplayCharsRef.current = [...streamTargetCharsRef.current];
+              streamDisplayTextRef.current = errorText;
+              streamDoneRef.current = true;
+              updateStreamMessage(errorText, []);
+              streamFinishedRef.current = true;
+              setStreaming(false);
+              setPlanningPreview(false);
+            }
+          },
+          historyForRequest(messages),
+          sessionId
+        );
+      }
+
+      const handleSaveTrip = () => {
+        if (!itinerary || saving || savedTripId) return;
+        setSaving(true);
+        setSaveError("");
+        window.TravelMate.api.saveTrip(itinerary, (trip) => {
+          setSaving(false);
+          setSavedTripId(trip.id);
+          setSavedTip(true);
+          setTimeout(() => setSavedTip(false), 2500);
+        }, (error) => {
+          setSaving(false);
+          setSaveError(error && error.message ? `保存失败：${error.message}` : "保存失败，请稍后重试");
+        });
+      };
+
+      return (
+        <div className="app">
+          <Topbar />
+          <div className="assistant-layout">
+            <div className="chat-panel-wrap">
+              <ChatPanel messages={messages} onSend={sendMessage} streaming={streaming} />
+            </div>
+            <aside className="preview-panel" id="itinerary-preview">
+              <div className="preview-head">
+                <span className="preview-title">行程预览</span>
+                {savedTip && <span className="saved-tip"><CheckIcon size={12} /> 已保存</span>}
+              </div>
+              {itinerary ? (
+                <>
+                  <ItineraryCard itinerary={itinerary} onSave={handleSaveTrip} saving={saving} savedTripId={savedTripId} />
+                  {saveError && <div className="save-error" role="alert">{saveError}<button className="ghost-btn sm" onClick={handleSaveTrip}>重试保存</button></div>}
+                </>
+              ) : (planningPreview && streaming) ? (
+                <div className="preview-loading" role="status">
+                  <div className="preview-empty-icon"><SparkleIcon size={24} /></div>
+                  <p>正在生成你的行程</p>
+                  <p className="preview-empty-sub">正在整理路线、交通和预算</p>
+                </div>
+              ) : (
+                <div className="preview-empty">
+                  <div className="preview-empty-icon"><MapPinIcon size={24} /></div>
+                  <p>在这里查看 AI 生成的行程</p>
+                  <p className="preview-empty-sub">试试输入「五一去日本玩7天，预算1万」</p>
+                </div>
+              )}
+              {sessions.length > 0 && (
+                <div className="history-panel">
+                  <div className="history-title"><HistoryIcon size={14} /> 最近会话</div>
+                  <ul className="history-list">
+                    {sessions.slice(0, 5).map((s) => (
+                      <li key={s.id} className="history-item">
+                        <span className="history-q">{s.question}</span>
+                        <span className="history-time">{s.time}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </aside>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body,#root{height:100%;overflow:hidden}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    .app{display:flex;flex-direction:column;height:100vh;background:var(--background)}
+
+    /* Topbar */
+    .topbar{flex:0 0 auto;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .topbar-page-tag{font-size:.8rem;color:var(--muted-foreground);padding:.3rem .7rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-weight:600}
+    .icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+    .home-link{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4);border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);text-decoration:none;font-weight:600;font-size:.88rem;transition:opacity .2s}
+    .home-link:hover{opacity:.9}
+
+    /* Layout */
+    .assistant-layout{flex:1;min-height:0;height:calc(100vh - 64px);display:grid;grid-template-columns:1.1fr .9fr;gap:calc(var(--spacing)*5);padding:calc(var(--spacing)*5) calc(var(--spacing)*8);background:var(--background);overflow:hidden}
+    .chat-panel-wrap{min-width:0;min-height:0;display:flex;overflow:hidden}
+
+    /* Chat Panel */
+    .chat-panel{flex:1;min-width:0;display:flex;flex-direction:column;border:1px solid var(--border);border-radius:calc(var(--radius) + 8px);background:var(--card);overflow:hidden}
+    .chat-messages{flex:1;min-height:0;overflow-y:auto;padding:calc(var(--spacing)*6);display:flex;flex-direction:column;gap:calc(var(--spacing)*5)}
+    .chat-row{display:flex;gap:calc(var(--spacing)*3);max-width:86%}
+    .chat-row.user{align-self:flex-end}
+    .chat-row.bot{align-self:flex-start}
+    .bot-avatar{width:30px;height:30px;flex:0 0 30px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground)}
+    .bubble{padding:calc(var(--spacing)*3.5) calc(var(--spacing)*4);border-radius:calc(var(--radius) + 4px);font-size:.9rem;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+    .bubble.user{background:var(--primary);color:var(--primary-foreground);border-bottom-right-radius:4px}
+    .bubble.bot{background:var(--muted);color:var(--foreground);border-bottom-left-radius:4px}
+    .plain-text-output{white-space:pre-wrap;word-break:break-word}
+    .stream-cursor{display:inline-block;width:2px;height:1em;margin-left:.2rem;vertical-align:-.12em;background:currentColor;animation:stream-cursor-blink 1s steps(1,end) infinite}
+    @keyframes stream-cursor-blink{0%,45%{opacity:1}46%,100%{opacity:0}}
+    .structured-message-layout{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:start;gap:calc(var(--spacing)*2.5)}
+    .message-topic-icon{width:28px;height:28px;display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--primary);border:1px solid var(--border)}
+    .structured-message{white-space:normal}
+    .message-paragraph{margin:0 0 calc(var(--spacing)*3)}
+    .message-paragraph:last-child{margin-bottom:0}
+    .message-heading{margin:calc(var(--spacing)*4) 0 calc(var(--spacing)*2);font-size:.92rem;font-weight:700;line-height:1.45}
+    .message-heading:first-child{margin-top:0}
+    .message-list{margin:0 0 calc(var(--spacing)*3);padding-left:1.3rem;display:flex;flex-direction:column;gap:calc(var(--spacing)*1.25)}
+    .message-list:last-child{margin-bottom:0}
+    .message-list li::marker{color:var(--primary)}
+    .message-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:calc(var(--spacing)*3) 0;border-block:1px solid var(--border)}
+    .message-fact{min-width:0;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3);border-left:1px solid var(--border)}
+    .message-fact:first-child{border-left:0}
+    .message-fact dt{font-size:.7rem;font-weight:700;color:var(--muted-foreground)}
+    .message-fact dd{margin-top:.2rem;font-size:.84rem;font-weight:650;overflow-wrap:anywhere}
+    .message-note{margin:calc(var(--spacing)*3) 0 0;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3);border-left:3px solid var(--chart-3);background:color-mix(in srgb,var(--chart-3) 9%,transparent);color:var(--muted-foreground);font-size:.82rem;font-style:normal}
+    .conversation-itinerary{min-width:0;white-space:normal}
+    .conversation-itinerary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:calc(var(--spacing)*4)}
+    .conversation-itinerary-heading{display:flex;align-items:flex-start;gap:calc(var(--spacing)*2.5);min-width:0}
+    .conversation-itinerary-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:50%;background:var(--card);color:var(--primary);border:1px solid var(--border)}
+    .conversation-itinerary h3{font-size:1rem;line-height:1.4}
+    .conversation-itinerary-heading p{margin-top:calc(var(--spacing)*1.5);color:var(--muted-foreground);font-size:.8rem;line-height:1.55}
+    .conversation-budget{flex:0 0 auto;color:var(--primary);font-size:.82rem;white-space:nowrap}
+    .conversation-route{margin-top:calc(var(--spacing)*3);border-block:1px solid var(--border)}
+    .conversation-route-row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:calc(var(--spacing)*2.5);align-items:start;padding:calc(var(--spacing)*2.5) 0;border-top:1px solid var(--border)}
+    .conversation-route-row:first-child{border-top:0}
+    .conversation-route-row b{color:var(--primary);font-family:var(--font-mono);font-size:.75rem}
+    .conversation-route-row span{min-width:0;font-size:.82rem;overflow-wrap:anywhere}
+    .conversation-tip{display:flex;align-items:flex-start;gap:calc(var(--spacing)*2);margin-top:calc(var(--spacing)*3);padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3);border-left:3px solid var(--chart-3);background:color-mix(in srgb,var(--chart-3) 9%,transparent);color:var(--muted-foreground);font-size:.8rem}
+    .conversation-tip > span:first-child{display:grid;place-items:center;flex:0 0 auto;color:var(--chart-3);margin-top:.1rem}
+    .conversation-preview-link{display:inline-flex;align-items:center;gap:calc(var(--spacing)*1.5);margin-top:calc(var(--spacing)*3);color:var(--primary);font-size:.82rem;font-weight:700;text-decoration:none}
+    .conversation-preview-link:hover{text-decoration:underline}
+    .citations{margin-top:calc(var(--spacing)*3);padding-top:calc(var(--spacing)*3);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:calc(var(--spacing)*2)}
+    .citations-label{font-size:.72rem;color:var(--muted-foreground);font-weight:600}
+    .citation-chip{display:inline-flex;align-items:center;gap:.35rem;width:max-content;max-width:100%;padding:.3rem .65rem;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--primary);font-size:.76rem;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .citation-chip:hover{border-color:var(--ring)}
+    .typing-dots{display:inline-flex;gap:4px;padding:.4rem 0}
+    .typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--muted-foreground);animation:blink 1.2s infinite}
+    .typing-dots span:nth-child(2){animation-delay:.2s}
+    .typing-dots span:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+    /* Empty State */
+    .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*8);min-height:100%}
+    .empty-icon{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--muted);color:var(--primary)}
+    .empty-state h2{font-size:1.4rem;font-weight:700}
+    .empty-state p{color:var(--muted-foreground);font-size:.92rem;max-width:420px;line-height:1.6}
+    .suggestion-list{display:flex;flex-direction:column;gap:calc(var(--spacing)*2.5);margin-top:calc(var(--spacing)*3);width:min(440px,100%)}
+    .suggestion-btn{display:flex;align-items:flex-start;gap:.6rem;text-align:left;padding:calc(var(--spacing)*3.5) calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);color:var(--foreground);cursor:pointer;font-size:.85rem;transition:border-color .2s}
+    .suggestion-btn:hover{border-color:var(--ring)}
+    .suggestion-btn svg{color:var(--primary);flex:0 0 auto;margin-top:.2rem}
+
+    /* Input Bar */
+    .chat-input-bar{flex:0 0 auto;display:flex;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border-top:1px solid var(--border)}
+    .chat-input{flex:1;padding:calc(var(--spacing)*3.2) calc(var(--spacing)*4);border:1px solid var(--input);border-radius:999px;background:var(--popover);color:var(--foreground);outline:none;font-size:.9rem;transition:border-color .2s,box-shadow .2s}
+    .chat-input:focus{border-color:var(--ring);box-shadow:0 0 0 3px rgba(66,133,244,.12)}
+    .chat-input:disabled{opacity:.5}
+    .send-btn{width:40px;height:40px;flex:0 0 40px;border-radius:50%;border:none;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;cursor:pointer;transition:opacity .2s}
+    .send-btn:disabled{opacity:.4;cursor:default}
+    .send-btn:not(:disabled):hover{opacity:.85}
+
+    /* Preview Panel */
+    .preview-panel{min-width:0;min-height:0;height:100%;display:flex;flex-direction:column;gap:calc(var(--spacing)*4);overflow-y:auto;overscroll-behavior:contain;scroll-margin-top:calc(var(--spacing)*4);padding-right:calc(var(--spacing)*1)}
+    .preview-head{display:flex;align-items:center;justify-content:space-between}
+    .preview-title{font-size:1.05rem;font-weight:700}
+    .saved-tip{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .65rem;border-radius:999px;background:rgba(52,168,83,.12);color:var(--chart-5);font-size:.76rem;font-weight:600}
+    .save-error{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*3);border:1px solid rgba(234,67,53,.35);border-radius:var(--radius);background:rgba(234,67,53,.06);color:var(--chart-2);font-size:.8rem}
+    .primary-btn:disabled{opacity:.55;cursor:wait}
+    .preview-empty{flex:1;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:calc(var(--spacing)*2);border:1px dashed var(--border);border-radius:calc(var(--radius) + 8px);background:var(--popover);padding:calc(var(--spacing)*6)}
+    .preview-loading{flex:1;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:calc(var(--spacing)*2);border:1px solid var(--border);border-radius:calc(var(--radius) + 8px);background:var(--popover);padding:calc(var(--spacing)*6)}
+    .preview-loading .preview-empty-icon{animation:preview-pulse 1.4s ease-in-out infinite}
+    @keyframes preview-pulse{50%{transform:scale(1.08);opacity:.65}}
+    .preview-empty-icon{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--muted);color:var(--muted-foreground)}
+    .preview-empty p{color:var(--muted-foreground);font-size:.88rem}
+    .preview-empty-sub{font-size:.78rem;color:var(--muted-foreground);opacity:.7}
+
+    /* Itinerary Card */
+    .itinerary-card{flex:0 0 auto;border:1px solid var(--border);border-radius:calc(var(--radius) + 8px);background:var(--card);overflow:hidden}
+    .itinerary-head{padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .itinerary-title-row{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*3)}
+    .itinerary-title{display:flex;align-items:center;gap:.45rem}
+    .itinerary-title svg{color:var(--primary)}
+    .itinerary-meta{display:flex;gap:calc(var(--spacing)*2);flex-wrap:wrap}
+    .meta-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.28rem .6rem;border-radius:999px;background:var(--muted);color:var(--foreground);font-size:.76rem}
+    .day-list{padding:calc(var(--spacing)*2) calc(var(--spacing)*4)}
+    .day-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:calc(var(--spacing)*2);overflow:hidden;background:var(--background)}
+    .day-item.open{border-color:var(--ring)}
+    .day-head{width:100%;display:flex;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*3) calc(var(--spacing)*3.5);background:transparent;border:none;cursor:pointer;text-align:left;color:var(--foreground)}
+    .day-badge{flex:0 0 auto;width:34px;height:26px;display:grid;place-items:center;border-radius:6px;background:var(--muted);color:var(--muted-foreground);font-weight:700;font-size:.72rem;font-family:var(--font-mono)}
+    .day-title{flex:1;font-size:.88rem;font-weight:600}
+    .day-chevron{color:var(--muted-foreground);transition:transform .2s}
+    .day-item.open .day-chevron{transform:rotate(180deg)}
+    .day-body{padding:0 calc(var(--spacing)*3.5) calc(var(--spacing)*3.5) calc(var(--spacing)*8)}
+    .activity-list{list-style:none;display:flex;flex-direction:column;gap:calc(var(--spacing)*1.5);font-size:.84rem;color:var(--foreground)}
+    .activity-list li::before{content:"•";color:var(--primary);margin-right:.5rem}
+    .day-foot{display:flex;gap:calc(var(--spacing)*4);margin-top:calc(var(--spacing)*3);padding-top:calc(var(--spacing)*2);border-top:1px solid var(--border);font-size:.76rem;color:var(--muted-foreground)}
+    .empty-itinerary{padding:calc(var(--spacing)*6) calc(var(--spacing)*4);text-align:center;color:var(--muted-foreground);font-size:.86rem}
+    .itinerary-tips{padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border-top:1px solid var(--border)}
+    .tips-label{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;color:var(--foreground);margin-bottom:calc(var(--spacing)*2)}
+    .tips-label svg{color:var(--chart-3)}
+    .itinerary-tips ul{list-style:none;display:flex;flex-direction:column;gap:calc(var(--spacing)*1.5);font-size:.8rem;color:var(--muted-foreground)}
+    .itinerary-tips li::before{content:"·";margin-right:.4rem;color:var(--primary)}
+    .budget-summary{padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:calc(var(--spacing)*2)}
+    .budget-row{display:flex;justify-content:space-between;font-size:.84rem}
+    .budget-row span{color:var(--muted-foreground)}
+    .itinerary-actions{display:flex;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border-top:1px solid var(--border)}
+    .primary-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4);border:none;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.86rem;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+    .ghost-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4);border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--foreground);font-weight:600;font-size:.86rem;cursor:pointer;transition:background .2s}
+    .ghost-btn:hover{background:var(--primary-soft)}
+    .ghost-btn.sm{padding:calc(var(--spacing)*1.5) calc(var(--spacing)*2.5);font-size:.76rem}
+
+    /* History */
+    .history-panel{border:1px solid var(--border);border-radius:calc(var(--radius) + 8px);background:var(--card);padding:calc(var(--spacing)*4)}
+    .history-title{display:flex;align-items:center;gap:.4rem;font-size:.84rem;font-weight:700;margin-bottom:calc(var(--spacing)*3)}
+    .history-title svg{color:var(--primary)}
+    .history-list{list-style:none;display:flex;flex-direction:column;gap:calc(var(--spacing)*2)}
+    .history-item{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*2);padding:calc(var(--spacing)*2) 0;border-top:1px solid var(--border);font-size:.8rem}
+    .history-item:first-child{border-top:none}
+    .history-q{color:var(--foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+    .history-time{color:var(--muted-foreground);font-size:.72rem;flex:0 0 auto}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .assistant-layout{grid-template-columns:1fr;padding:calc(var(--spacing)*4);overflow-y:auto}
+      .preview-panel{height:auto;max-height:none;overflow:visible}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4)}
+      .topbar-page-tag{display:none}
+      .assistant-layout{padding:calc(var(--spacing)*3);gap:calc(var(--spacing)*3)}
+      .chat-panel-wrap{min-height:60vh}
+      .chat-row{max-width:92%}
+      .structured-message-layout{grid-template-columns:1fr}
+      .message-facts{grid-template-columns:1fr}
+      .message-fact{border-left:0;border-top:1px solid var(--border);padding-inline:0}
+      .message-fact:first-child{border-top:0}
+      .conversation-itinerary-head{flex-direction:column;gap:calc(var(--spacing)*2)}
+      .conversation-budget{padding-left:calc(28px + var(--spacing)*2.5)}
+      .conversation-route-row{grid-template-columns:44px minmax(0,1fr)}
+      .home-link{display:none}
+    }
+  </style>
+</body>
+</html>

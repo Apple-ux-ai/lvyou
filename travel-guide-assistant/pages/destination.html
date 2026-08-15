@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 目的地详情</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    /* ── SVG Icons ── */
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function StarIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>; }
+    function MapPinIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+    function ClockIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function WalletIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>; }
+    function ArrowLeftIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>; }
+    function ArrowRightIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>; }
+    function HeartIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>; }
+    function UtensilsIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>; }
+    function BedIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>; }
+    function BusIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>; }
+    function LightbulbIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>; }
+    function CompassIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>; }
+
+    /* ── Data ── */
+    const destinations = {
+      kyoto: {
+        id: "kyoto",
+        name: "京都",
+        fullName: "京都 · 千年古韵",
+        tag: "热门",
+        rating: "4.9",
+        img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1600&h=700&fit=crop",
+        desc: "漫步岚山竹林，体验茶道文化，春日樱花与秋日红叶交织的古都之旅",
+        bestSeason: "3-4月樱花 / 10-11月红叶",
+        duration: "5-7天",
+        budget: "¥8,000-12,000",
+        visa: "需办理日本旅游签证",
+        tabs: {
+          overview: "京都是日本最具传统韵味的城市，拥有 17 处世界文化遗产。春季樱花、秋季红叶、冬季雪景各有韵味。作为千年古都，这里保留着最完整的町屋建筑、茶道、和服文化，是深度体验日本文化的首选地。",
+          spots: [
+            { name: "伏见稻荷大社", img: "https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?w=500&h=320&fit=crop", desc: "千本鸟居，免费，清晨人少", price: "免费", rating: "4.9" },
+            { name: "岚山竹林", img: "https://images.unsplash.com/photo-1519832979-6fa032b40ab2?w=500&h=320&fit=crop", desc: "竹林小径 + 渡月桥，可乘小火车", price: "¥40", rating: "4.8" },
+            { name: "金阁寺", img: "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=500&h=320&fit=crop", desc: "金箔建筑，镜湖倒影经典机位", price: "¥20", rating: "4.7" },
+            { name: "清水寺", img: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=500&h=320&fit=crop", desc: "悬空舞台，二年坂三年坂散步", price: "¥30", rating: "4.8" }
+          ],
+          food: [
+            { name: "汤豆腐料理", desc: "京都素斋代表，南禅寺附近最正宗", price: "¥150-300" },
+            { name: "京料理怀石", desc: "体验四季食材的精致料理", price: "¥400-1000" },
+            { name: "抹茶甜品", desc: "宇治抹茶冰淇淋、抹茶蕨饼", price: "¥30-60" },
+            { name: "锦市场小吃", desc: "百年市场，豆腐、渍物、海鲜小食", price: "¥20-80" }
+          ],
+          stay: [
+            { name: "京都站周边", desc: "交通枢纽，出行最方便", price: "¥400-800/晚" },
+            { name: "祇园町屋民宿", desc: "体验传统日式住宿", price: "¥600-1500/晚" },
+            { name: "岚山温泉旅馆", desc: "河畔温泉，环境清幽", price: "¥1000-2500/晚" }
+          ],
+          transport: "京都市内以巴士 + 地铁为主。推荐购买「巴士一日券」（700 日元）。城市间移动可乘 JR、阪急电铁。关西机场乘 Haruka 特急约 80 分钟直达京都站。",
+          tips: ["樱花季提前 2-3 个月订酒店", "寺庙一般 17:00 闭门，注意时间", "茶道体验需提前预约", "夏季炎热，备好防晒和饮水"]
+        }
+      },
+      iceland: {
+        id: "iceland",
+        name: "冰岛",
+        fullName: "冰岛 · 极光秘境",
+        tag: "极地",
+        rating: "4.9",
+        img: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=1600&h=700&fit=crop",
+        desc: "追逐北极光，探索蓝冰洞，黄金圈环线的冰与火之歌",
+        bestSeason: "9月-次年3月极光 / 6-8月极昼",
+        duration: "7-10天",
+        budget: "¥18,000-28,000",
+        visa: "申根签证",
+        tabs: {
+          overview: "冰岛是北大西洋上的火山岛国，被称为「冰与火之地」。冬季极光、蓝冰洞，夏季极昼、环岛自驾，一年四季都有独特体验。黄金圈、南岸冰川湖是必去路线，适合喜欢自然奇观的旅行者。",
+          spots: [
+            { name: "蓝湖温泉", img: "https://images.unsplash.com/photo-1518806118471-f28b20a1d79d?w=500&h=320&fit=crop", desc: "乳蓝地热温泉，需提前预约", price: "¥750", rating: "4.8" },
+            { name: "黄金瀑布", img: "https://images.unsplash.com/photo-1539177538330-d5dd7c7af24f?w=500&h=320&fit=crop", desc: "双层瀑布，冬季部分结冰", price: "免费", rating: "4.8" },
+            { name: "杰古沙龙冰河湖", img: "https://images.unsplash.com/photo-1516594915697-87eb3b1c14ea?w=500&h=320&fit=crop", desc: "浮冰湖 + 蓝冰洞徒步", price: "¥1100", rating: "4.9" },
+            { name: "黑沙滩", img: "https://images.unsplash.com/photo-1509624992606-9f7f1473cf2d?w=500&h=320&fit=crop", desc: "玄武岩柱 + 雷尼斯岩，注意海浪", price: "免费", rating: "4.7" }
+          ],
+          food: [
+            { name: "冰岛热狗", desc: "雷克雅未克著名街头小吃", price: "¥50" },
+            { name: "鲸鱼肉", desc: "特色海鲜，游客可尝试", price: "¥200-400" },
+            { name: "羊肉汤", desc: "暖身经典，冬季推荐", price: "¥150-250" },
+            { name: "Skyr 酸奶", desc: "冰岛传统乳制品", price: "¥30-50" }
+          ],
+          stay: [
+            { name: "雷克雅未克市区", desc: "餐厅酒吧集中，看极光需出城", price: "¥800-1500/晚" },
+            { name: "南岸维克小镇", desc: "追极光最佳住宿点", price: "¥600-1200/晚" },
+            { name: "米湖地热区", desc: "北部温泉区，环境独特", price: "¥700-1300/晚" }
+          ],
+          transport: "环岛自驾是主流选择（约 1300 公里）。冬季建议四驱车 + 防滑链。也可参加当地一日团（黄金圈团约 ¥600-900）。注意加油站间距大。",
+          tips: ["冬季天黑早（15:30），合理规划行车", "出发前查路况 road.is", "极光看 Kp 指数和云图", "防风防水外套必备"]
+        }
+      },
+      dali: {
+        id: "dali",
+        name: "大理",
+        fullName: "大理 · 苍山洱海",
+        tag: "国内",
+        rating: "4.7",
+        img: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=1600&h=700&fit=crop",
+        desc: "洱海环湖骑行，古城白族建筑，苍山云海日出的慢生活",
+        bestSeason: "全年皆宜，11月-3月最舒适",
+        duration: "4-6天",
+        budget: "¥3,000-5,000",
+        visa: "国内游，无需签证",
+        tabs: {
+          overview: "大理位于云南高原（约 2000 米），苍山洱海之间。白族风情浓郁，古城、喜洲、双廊各有特色。慢节奏是这里的主题——骑行环海、品茶发呆、看云卷云舒。是国内最受欢迎的慢生活目的地之一。",
+          spots: [
+            { name: "洱海环湖", img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&h=320&fit=crop", desc: "环海西路骑行，S 弯网红打卡", price: "¥60-100/天", rating: "4.8" },
+            { name: "大理古城", img: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=500&h=320&fit=crop", desc: "五华楼、人民路、洋人街", price: "免费", rating: "4.6" },
+            { name: "苍山", img: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500&h=320&fit=crop", desc: "洗马潭索道 + 寂照庵斋饭", price: "¥70-200", rating: "4.7" },
+            { name: "崇圣寺三塔", img: "https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=500&h=320&fit=crop", desc: "大理地标，倒影池经典机位", price: "¥75", rating: "4.5" }
+          ],
+          food: [
+            { name: "白族酸辣鱼", desc: "洱海鱼 + 酸辣汤底，特色必吃", price: "¥60-120" },
+            { name: "乳扇", desc: "白族传统乳制品小吃", price: "¥10-20" },
+            { name: "饵丝/米线", desc: "早餐首选，便宜管饱", price: "¥15-30" },
+            { name: "三道茶", desc: "白族待客礼仪体验", price: "¥30-60" }
+          ],
+          stay: [
+            { name: "古城内民宿", desc: "石板路老宅改造，氛围佳", price: "¥150-400/晚" },
+            { name: "洱海边海景房", desc: "环海西路日出景观", price: "¥400-1200/晚" },
+            { name: "双廊古镇", desc: "文艺民宿聚集地", price: "¥300-800/晚" }
+          ],
+          transport: "可直飞大理机场，或飞昆明转高铁（约 2 小时）。市内以电动车/自行车为主，环海骑行租车 60-100 元/天。古城内步行即可。",
+          tips: ["高原注意防晒补水", "午后洱海风大，骑行注意安全", "11月-3月为淡季，房价便宜 40%", "古城商业化较重，喜洲更原生态"]
+        }
+      },
+      bali: {
+        id: "bali",
+        name: "巴厘岛",
+        fullName: "巴厘岛 · 乌布梯田",
+        tag: "海岛",
+        rating: "4.8",
+        img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1600&h=700&fit=crop",
+        desc: "在乌布梯田间瑜伽冥想，海神庙日落，库塔冲浪的热带天堂",
+        bestSeason: "4-10月旱季最佳",
+        duration: "6-8天",
+        budget: "¥5,000-9,000",
+        visa: "对中国免签/落地签",
+        tabs: {
+          overview: "巴厘岛是印度尼西亚著名的度假岛屿，「诸神之岛」。南部库塔、金巴兰以海滩冲浪为主，中部乌布以梯田、瑜伽、艺术闻名。海神庙日落、天空之门、阿勇河漂流都是经典体验。",
+          spots: [
+            { name: "乌布梯田", img: "https://images.unsplash.com/photo-1544471129-f2d7d14dc5c7?w=500&h=320&fit=crop", desc: "德格拉朗梯田，稻香与瑜伽", price: "¥15", rating: "4.8" },
+            { name: "海神庙", img: "https://images.unsplash.com/photo-1519821172144-4f87d85de2a1?w=500&h=320&fit=crop", desc: "海上寺庙，日落必打卡", price: "¥40", rating: "4.7" },
+            { name: "库塔海滩", img: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=500&h=320&fit=crop", desc: "冲浪胜地，初学者友好", price: "免费", rating: "4.5" },
+            { name: "天空之门", img: "https://images.unsplash.com/photo-1538428494232-ebb3d572b12b?w=500&h=320&fit=crop", desc: "网红拍照点，排队较长", price: "¥25", rating: "4.4" }
+          ],
+          food: [
+            { name: "Nasi Goreng", desc: "印尼炒饭，国民美食", price: "¥30-60" },
+            { name: "Babi Guling", desc: "乌布烤乳猪饭，必吃", price: "¥50-80" },
+            { name: "脏鸭餐", desc: "乌布特色脆皮鸭", price: "¥80-120" },
+            { name: "水果冰沙", desc: "热带水果现打，便宜好喝", price: "¥15-30" }
+          ],
+          stay: [
+            { name: "库塔海滩区", desc: "冲浪购物方便", price: "¥300-600/晚" },
+            { name: "乌布丛林别墅", desc: "梯田景观 + 泳池", price: "¥500-1500/晚" },
+            { name: "金巴兰海景", desc: "海边日落晚餐", price: "¥600-1800/晚" }
+          ],
+          transport: "可包车（约 ¥300/天）或租摩托（约 ¥50/天）。乌布到库塔约 1.5 小时车程。岛内景点分散，建议包车或参加一日团。",
+          tips: ["注意防蚊，备好驱蚊液", "寺庙参观需穿长裤/纱笼", "打车用 Grab 更便宜", "乌布汇率比机场好"]
+        }
+      }
+    };
+
+    const defaultDest = "kyoto";
+    const tabLabels = [
+      { id: "overview", label: "概览", icon: <CompassIcon size={14} /> },
+      { id: "spots", label: "景点", icon: <MapPinIcon size={14} /> },
+      { id: "food", label: "美食", icon: <UtensilsIcon size={14} /> },
+      { id: "stay", label: "住宿", icon: <BedIcon size={14} /> },
+      { id: "transport", label: "交通", icon: <BusIcon size={14} /> },
+      { id: "tips", label: "贴士", icon: <LightbulbIcon size={14} /> }
+    ];
+
+    /* ── Components ── */
+    function Topbar() {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <a className="back-link" href="home.html"><ArrowLeftIcon size={14} /> 返回首页</a>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <button className="icon-btn" title="收藏"><HeartIcon size={18} /></button>
+            <div className="avatar">旅</div>
+          </div>
+        </header>
+      );
+    }
+
+    function Hero({ dest }) {
+      return (
+        <div className="hero" style={{ backgroundImage: `url(${dest.img})` }}>
+          <div className="hero-overlay"></div>
+          <div className="hero-content">
+            <div className="hero-tags">
+              <span className="hero-tag">{dest.tag}</span>
+              <span className="hero-tag rating"><StarIcon size={12} /> {dest.rating}</span>
+            </div>
+            <h1 className="hero-title">{dest.fullName}</h1>
+            <p className="hero-desc">{dest.desc}</p>
+            <div className="hero-meta">
+              <span><ClockIcon size={14} /> {dest.duration}</span>
+              <span><WalletIcon size={14} /> {dest.budget}</span>
+              <span><MapPinIcon size={14} /> {dest.bestSeason}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function OverviewTab({ dest }) {
+      return (
+        <div className="tab-content">
+          <div className="overview-grid">
+            <div className="overview-main">
+              <h3>目的地介绍</h3>
+              <p className="overview-text">{dest.tabs.overview}</p>
+              <h3>签证信息</h3>
+              <p className="overview-text">{dest.visa}</p>
+            </div>
+            <div className="overview-side">
+              <div className="info-card">
+                <h4>旅行信息</h4>
+                <div className="info-row"><span>最佳季节</span><strong>{dest.bestSeason}</strong></div>
+                <div className="info-row"><span>建议天数</span><strong>{dest.duration}</strong></div>
+                <div className="info-row"><span>人均预算</span><strong>{dest.budget}</strong></div>
+                <div className="info-row"><span>签证</span><strong>{dest.visa}</strong></div>
+                <button className="primary-btn" onClick={() => window.TravelMate.utils.go("assistant.html", { query: `帮我规划${dest.name}${dest.duration.split("-")[0]}天行程` })}>
+                  用 AI 规划行程 <ArrowRightIcon size={14} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function SpotsTab({ dest }) {
+      return (
+        <div className="tab-content">
+          <div className="spots-grid">
+            {dest.tabs.spots.map((spot, i) => (
+              <div key={i} className="spot-card">
+                <img className="spot-img" src={spot.img} alt={spot.name} loading="lazy" />
+                <div className="spot-body">
+                  <div className="spot-name-row">
+                    <strong className="spot-name">{spot.name}</strong>
+                    <span className="spot-rating"><StarIcon size={12} /> {spot.rating}</span>
+                  </div>
+                  <p className="spot-desc">{spot.desc}</p>
+                  <span className="spot-price">门票 {spot.price}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function FoodTab({ dest }) {
+      return (
+        <div className="tab-content">
+          <div className="food-grid">
+            {dest.tabs.food.map((item, i) => (
+              <div key={i} className="food-card">
+                <div className="food-icon"><UtensilsIcon size={18} /></div>
+                <div className="food-info">
+                  <div className="food-name-row">
+                    <strong>{item.name}</strong>
+                    <span className="food-price">{item.price}</span>
+                  </div>
+                  <p>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function StayTab({ dest }) {
+      return (
+        <div className="tab-content">
+          <div className="stay-grid">
+            {dest.tabs.stay.map((item, i) => (
+              <div key={i} className="stay-card">
+                <div className="stay-icon"><BedIcon size={18} /></div>
+                <div className="stay-info">
+                  <div className="stay-name-row">
+                    <strong>{item.name}</strong>
+                    <span className="stay-price">{item.price}</span>
+                  </div>
+                  <p>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function TransportTab({ dest }) {
+      return (
+        <div className="tab-content">
+          <div className="info-card wide">
+            <h4><BusIcon size={16} /> 交通指南</h4>
+            <p className="overview-text">{dest.tabs.transport}</p>
+          </div>
+        </div>
+      );
+    }
+
+    function TipsTab({ dest }) {
+      return (
+        <div className="tab-content">
+          <div className="tips-list">
+            {dest.tabs.tips.map((tip, i) => (
+              <div key={i} className="tip-item">
+                <div className="tip-num">{String(i + 1).padStart(2, "0")}</div>
+                <p>{tip}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ItineraryPreview({ dest }) {
+      return (
+        <section className="section">
+          <div className="section-head">
+            <h2>推荐行程</h2>
+            <button type="button" className="view-all" onClick={() => window.TravelMate.utils.go("assistant.html", { query: `帮我规划${dest.name}7天行程` })}>用 AI 定制 <ArrowRightIcon size={14} /></button>
+          </div>
+          <div className="route-card">
+            <div className="route-head">
+              <span className="route-title"><MapPinIcon size={16} /> {dest.name} 经典 {dest.duration.split("-")[0]} 日线路</span>
+              <span className="route-badge">约 {dest.budget}</span>
+            </div>
+            <div className="route-days">
+              {[1, 2, 3, 4, 5].slice(0, parseInt(dest.duration.split("-")[0])).map((d) => (
+                <div key={d} className="route-day">
+                  <div className="route-day-badge">D{d}</div>
+                  <div className="route-day-title">第{d}天 · {d === 1 ? "抵达探索" : d === 5 ? "深度体验" : "经典路线"}</div>
+                  <div className="route-day-sub">核心景点 + 当地美食</div>
+                </div>
+              ))}
+            </div>
+            <button className="primary-btn" onClick={() => window.TravelMate.utils.go("assistant.html", { query: `帮我规划${dest.name}${dest.duration.split("-")[0]}天行程` })}>
+              生成完整行程 <ArrowRightIcon size={14} />
+            </button>
+          </div>
+        </section>
+      );
+    }
+
+    function App() {
+      const [activeTab, setActiveTab] = useState("overview");
+      const destId = window.TravelMate.utils.getQueryParam("id") || defaultDest;
+      const dest = destinations[destId] || destinations[defaultDest];
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+      }, []);
+
+      return (
+        <div className="app">
+          <Topbar />
+          <Hero dest={dest} />
+          <div className="dest-layout">
+            <nav className="tab-nav">
+              {tabLabels.map((t) => (
+                <button key={t.id} className={`tab-btn ${activeTab === t.id ? "active" : ""}`} onClick={() => setActiveTab(t.id)}>
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </nav>
+            <div className="tab-panel">
+              {activeTab === "overview" && <OverviewTab dest={dest} />}
+              {activeTab === "spots" && <SpotsTab dest={dest} />}
+              {activeTab === "food" && <FoodTab dest={dest} />}
+              {activeTab === "stay" && <StayTab dest={dest} />}
+              {activeTab === "transport" && <TransportTab dest={dest} />}
+              {activeTab === "tips" && <TipsTab dest={dest} />}
+            </div>
+            <ItineraryPreview dest={dest} />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .back-link{display:inline-flex;align-items:center;gap:.35rem;color:var(--muted-foreground);text-decoration:none;font-size:.86rem;transition:color .2s}
+    .back-link:hover{color:var(--primary)}
+    .icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+    /* Hero */
+    .hero{position:relative;height:420px;background-size:cover;background-position:center}
+    .hero-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,17,21,.15) 0%,rgba(14,17,21,.72) 100%)}
+    .hero-content{position:absolute;left:0;right:0;bottom:0;padding:calc(var(--spacing)*8);display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .hero-tags{display:flex;gap:calc(var(--spacing)*2)}
+    .hero-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .7rem;border-radius:999px;background:rgba(255,255,255,.18);backdrop-filter:blur(6px);color:#fff;font-size:.78rem;font-weight:600}
+    .hero-tag.rating{background:rgba(251,188,5,.22)}
+    .hero-title{color:#fff;font-size:2.2rem;font-weight:700;letter-spacing:-0.02em}
+    .hero-desc{color:rgba(255,255,255,.88);font-size:1rem;max-width:620px}
+    .hero-meta{display:flex;gap:calc(var(--spacing)*5);flex-wrap:wrap}
+    .hero-meta span{display:inline-flex;align-items:center;gap:.35rem;color:rgba(255,255,255,.9);font-size:.84rem}
+
+    /* Layout */
+    .dest-layout{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*6) calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;gap:calc(var(--spacing)*7)}
+
+    /* Tab Nav */
+    .tab-nav{display:flex;gap:calc(var(--spacing)*2);border-bottom:1px solid var(--border);overflow-x:auto}
+    .tab-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*3) calc(var(--spacing)*4);border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted-foreground);cursor:pointer;font-size:.9rem;font-weight:600;white-space:nowrap;transition:color .2s}
+    .tab-btn:hover{color:var(--foreground)}
+    .tab-btn.active{color:var(--primary);border-color:var(--primary)}
+    .tab-btn svg{flex:0 0 auto}
+
+    /* Tab Panel */
+    .tab-panel{min-height:200px}
+    .tab-content{display:flex;flex-direction:column;gap:calc(var(--spacing)*5)}
+
+    /* Overview */
+    .overview-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:calc(var(--spacing)*6);align-items:start}
+    .overview-main h3{font-size:1.15rem;font-weight:700;margin-bottom:calc(var(--spacing)*2.5)}
+    .overview-text{color:var(--muted-foreground);font-size:.92rem;line-height:1.8;margin-bottom:calc(var(--spacing)*5)}
+    .info-card{border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);padding:calc(var(--spacing)*5);display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .info-card h4{font-size:.95rem;font-weight:700;margin-bottom:calc(var(--spacing)*1)}
+    .info-card.wide{max-width:720px}
+    .info-row{display:flex;justify-content:space-between;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*2.5) 0;border-top:1px solid var(--border);font-size:.86rem}
+    .info-row span{color:var(--muted-foreground)}
+    .primary-btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:calc(var(--spacing)*3) calc(var(--spacing)*4.5);border:none;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.88rem;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+
+    /* Spots */
+    .spots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--spacing)*4)}
+    .spot-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden;transition:border-color .2s}
+    .spot-card:hover{border-color:var(--ring)}
+    .spot-img{width:100%;height:150px;object-fit:cover;display:block}
+    .spot-body{padding:calc(var(--spacing)*3.5)}
+    .spot-name-row{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*2);margin-bottom:.3rem}
+    .spot-name{font-size:.92rem}
+    .spot-rating{display:inline-flex;align-items:center;gap:.2rem;color:var(--chart-3);font-size:.78rem;font-weight:700}
+    .spot-desc{font-size:.8rem;color:var(--muted-foreground);line-height:1.5;margin-bottom:calc(var(--spacing)*2)}
+    .spot-price{display:inline-block;padding:.25rem .6rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.74rem;font-weight:600}
+
+    /* Food */
+    .food-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:calc(var(--spacing)*4)}
+    .food-card{display:flex;gap:calc(var(--spacing)*3.5);align-items:flex-start;padding:calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);transition:border-color .2s}
+    .food-card:hover{border-color:var(--ring)}
+    .food-icon{width:42px;height:42px;flex:0 0 42px;border-radius:var(--radius);display:grid;place-items:center;background:var(--muted);color:var(--primary)}
+    .food-name-row{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*2);margin-bottom:.2rem}
+    .food-price{color:var(--primary);font-weight:600;font-size:.8rem;white-space:nowrap}
+    .food-info p{font-size:.82rem;color:var(--muted-foreground);line-height:1.5}
+
+    /* Stay */
+    .stay-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*4)}
+    .stay-card{display:flex;gap:calc(var(--spacing)*3.5);align-items:flex-start;padding:calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);transition:border-color .2s}
+    .stay-card:hover{border-color:var(--ring)}
+    .stay-icon{width:42px;height:42px;flex:0 0 42px;border-radius:var(--radius);display:grid;place-items:center;background:var(--muted);color:var(--primary)}
+    .stay-name-row{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*2);margin-bottom:.2rem}
+    .stay-price{color:var(--muted-foreground);font-weight:600;font-size:.76rem;white-space:nowrap}
+    .stay-info p{font-size:.82rem;color:var(--muted-foreground);line-height:1.5}
+
+    /* Tips */
+    .tips-list{display:flex;flex-direction:column;gap:calc(var(--spacing)*2.5)}
+    .tip-item{display:flex;align-items:flex-start;gap:calc(var(--spacing)*3.5);padding:calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card)}
+    .tip-num{flex:0 0 auto;font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--primary);opacity:.4}
+    .tip-item p{font-size:.88rem;color:var(--foreground);line-height:1.6}
+
+    /* Section / Route */
+    .section{display:flex;flex-direction:column;gap:calc(var(--spacing)*4)}
+    .section-head{display:flex;justify-content:space-between;align-items:center}
+    .section-head h2{font-size:1.3rem;font-weight:700}
+    .view-all{display:inline-flex;align-items:center;gap:.3rem;border:0;background:transparent;color:var(--primary);font-size:.86rem;font-weight:600;cursor:pointer}
+    .view-all:hover{text-decoration:underline}
+    .route-card{border:1px solid var(--border);border-radius:calc(var(--radius) + 8px);background:var(--card);padding:calc(var(--spacing)*5);display:flex;flex-direction:column;gap:calc(var(--spacing)*4)}
+    .route-head{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*3);flex-wrap:wrap}
+    .route-title{display:inline-flex;align-items:center;gap:.4rem;font-size:1rem;font-weight:700}
+    .route-title svg{color:var(--primary)}
+    .route-badge{padding:.3rem .7rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.78rem;font-weight:600}
+    .route-days{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:calc(var(--spacing)*3)}
+    .route-day{padding:calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:var(--radius);background:var(--background)}
+    .route-day-badge{display:inline-flex;width:34px;height:26px;align-items:center;justify-content:center;border-radius:6px;background:var(--primary);color:var(--primary-foreground);font-weight:700;font-size:.72rem;font-family:var(--font-mono);margin-bottom:calc(var(--spacing)*2)}
+    .route-day-title{font-size:.84rem;font-weight:600;margin-bottom:.15rem}
+    .route-day-sub{font-size:.74rem;color:var(--muted-foreground)}
+    .route-card .primary-btn{align-self:flex-start}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .spots-grid{grid-template-columns:repeat(2,1fr)}
+      .stay-grid{grid-template-columns:1fr}
+      .overview-grid{grid-template-columns:1fr}
+      .dest-layout{padding:calc(var(--spacing)*5) calc(var(--spacing)*5) calc(var(--spacing)*8)}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4)}
+      .hero{height:340px}
+      .hero-content{padding:calc(var(--spacing)*5)}
+      .hero-title{font-size:1.6rem}
+      .dest-layout{padding:calc(var(--spacing)*4) calc(var(--spacing)*4) calc(var(--spacing)*7)}
+      .spots-grid,.food-grid{grid-template-columns:1fr}
+      .back-link{display:none}
+    }
+  </style>
+</body>
+</html>

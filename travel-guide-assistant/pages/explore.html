@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 探索</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    /* ── SVG Icons ── */
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function SearchIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>; }
+    function CompassIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>; }
+    function MountainIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 3 4 8 5-5 5 15H2L8 3z"/></svg>; }
+    function UmbrellaIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12a10.06 10.06 0 0 0-20 0Z"/><path d="M12 12v8a2 2 0 0 0 4 0"/><path d="M12 2v1"/></svg>; }
+    function SnowflakeIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg>; }
+    function StarIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>; }
+    function MapPinIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+    function ClockIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function WalletIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>; }
+    function ArrowRightIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>; }
+    function FilterIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>; }
+    function WandIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>; }
+    function FireIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>; }
+
+    /* ── Data ── */
+    const themes = [
+      { id: "family", label: "家庭出游", icon: <MountainIcon size={14} />, desc: "亲子友好、节奏舒缓", color: "var(--chart-5)" },
+      { id: "beach", label: "海岛度假", icon: <UmbrellaIcon size={14} />, desc: "阳光、沙滩、潜水", color: "var(--chart-1)" },
+      { id: "winter", label: "冰雪极地", icon: <SnowflakeIcon size={14} />, desc: "极光、滑雪、温泉", color: "var(--chart-2)" },
+      { id: "city", label: "城市漫游", icon: <CompassIcon size={14} />, desc: "人文、美食、购物", color: "var(--chart-3)" }
+    ];
+
+    const destinations = [
+      { id: "kyoto", name: "京都", country: "日本", theme: "city", tag: "人文古都", rating: "4.9", budget: "¥8K-12K", days: "5-7天", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&h=380&fit=crop" },
+      { id: "bali", name: "巴厘岛", country: "印尼", theme: "beach", tag: "海岛天堂", rating: "4.8", budget: "¥5K-9K", days: "6-8天", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=380&fit=crop" },
+      { id: "iceland", name: "冰岛", country: "北欧", theme: "winter", tag: "极光秘境", rating: "4.9", budget: "¥15K-25K", days: "7-10天", img: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=600&h=380&fit=crop" },
+      { id: "dali", name: "大理", country: "云南", theme: "family", tag: "慢生活", rating: "4.7", budget: "¥3K-5K", days: "4-6天", img: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=600&h=380&fit=crop" },
+      { id: "tokyo", name: "东京", country: "日本", theme: "city", tag: "潮流之都", rating: "4.8", budget: "¥8K-12K", days: "5天", img: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&h=380&fit=crop" },
+      { id: "xingjiang", name: "新疆", country: "中国", theme: "family", tag: "自驾天堂", rating: "4.8", budget: "¥6K-10K", days: "6-8天", img: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&h=380&fit=crop" },
+      { id: "swiss", name: "瑞士", country: "欧洲", theme: "winter", tag: "雪山火车", rating: "4.9", budget: "¥16K-24K", days: "7天", img: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=380&fit=crop" },
+      { id: "thailand", name: "清迈", country: "泰国", theme: "beach", tag: "文艺小城", rating: "4.6", budget: "¥3K-5K", days: "4-6天", img: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&h=380&fit=crop" }
+    ];
+
+    const aiPicks = [
+      { title: "带娃去看极光", desc: "冰岛亲子 8 天：极光 + 蓝冰洞 + 温泉，每天车程 ≤ 2h", icon: <WandIcon size={14} /> },
+      { title: "预算 3000 玩转大理", desc: "4 天慢生活：环洱海骑行 + 苍山云海 + 白族美食", icon: <WandIcon size={14} /> },
+      { title: "首次出国选日本", desc: "关西 7 天：京都古韵 + 大阪美食 + 奈良喂鹿", icon: <WandIcon size={14} /> }
+    ];
+
+    const budgetFilter = ["全部", "¥3K-5K", "¥5K-9K", "¥8K-12K", "¥15K+"];
+
+    /* ── Components ── */
+    function Topbar() {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <nav className="nav-links">
+              <a className="nav-link" href="home.html">首页</a>
+              <a className="nav-link active" href="explore.html">目的地</a>
+              <a className="nav-link" href="guides.html">攻略</a>
+              <a className="nav-link" href="community.html">社区</a>
+            </nav>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <div className="avatar">旅</div>
+          </div>
+        </header>
+      );
+    }
+
+    function SearchHero({ query, onQuery }) {
+      return (
+        <div className="search-hero">
+          <h1>探索世界，<span>发现灵感</span></h1>
+          <p>按主题、预算或目的地，找到属于你的下一段旅程</p>
+          <div className="hero-search-box">
+            <SearchIcon size={18} />
+            <input
+              placeholder="搜索目的地、主题、玩法..."
+              value={query}
+              onChange={(e) => onQuery(e.target.value)}
+            />
+            <button className="hero-search-btn" onClick={() => window.TravelMate.utils.go("assistant.html", { query })}>
+              <WandIcon size={14} /> AI 规划
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function ThemeStrip({ active, onSelect }) {
+      return (
+        <div className="theme-strip">
+          <button className={`theme-chip ${active === "all" ? "active" : ""}`} onClick={() => onSelect("all")}>
+            <CompassIcon size={14} /> 全部
+          </button>
+          {themes.map((t) => (
+            <button key={t.id} className={`theme-chip ${active === t.id ? "active" : ""}`} onClick={() => onSelect(t.id)} style={{ "--chip-color": t.color }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    function DestCard({ item }) {
+      const handleClick = () => window.TravelMate.utils.go("destination.html", { id: item.id });
+      return (
+        <article className="dest-card" onClick={handleClick} role="link" tabIndex="0" aria-label={`查看 ${item.name}`}>
+          <div className="dest-cover-wrap">
+            <img className="dest-img" src={item.img} alt={item.name} loading="lazy" />
+            <span className="dest-tag">{item.tag}</span>
+            <span className="dest-rating"><StarIcon size={12} /> {item.rating}</span>
+          </div>
+          <div className="dest-body">
+            <div className="dest-name-row">
+              <strong className="dest-name">{item.name}</strong>
+              <span className="dest-country">{item.country}</span>
+            </div>
+            <div className="dest-meta">
+              <span><ClockIcon size={12} /> {item.days}</span>
+              <span><WalletIcon size={12} /> {item.budget}</span>
+            </div>
+          </div>
+        </article>
+      );
+    }
+
+    function AiPicks() {
+      return (
+        <section className="ai-picks">
+          <div className="section-head">
+            <h2><WandIcon size={16} /> AI 精选灵感</h2>
+            <button type="button" className="view-all" onClick={() => window.TravelMate.utils.go("assistant.html")}>用 AI 定制 <ArrowRightIcon size={14} /></button>
+          </div>
+          <div className="ai-grid">
+            {aiPicks.map((p, i) => (
+              <div key={i} className="ai-card" onClick={() => window.TravelMate.utils.go("assistant.html", { query: p.title })} role="link" tabIndex="0">
+                <div className="ai-card-icon"><WandIcon size={16} /></div>
+                <h3>{p.title}</h3>
+                <p>{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function App() {
+      const [query, setQuery] = useState("");
+      const [theme, setTheme] = useState("all");
+      const [budget, setBudget] = useState("全部");
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+      }, []);
+
+      const filtered = useMemo(() => {
+        let list = [...destinations];
+        if (theme !== "all") list = list.filter((d) => d.theme === theme);
+        if (budget !== "全部") {
+          list = list.filter((d) => {
+            const lo = parseInt(d.budget.replace(/[^\d]/g, "").slice(0, 4));
+            if (budget === "¥3K-5K") return lo >= 3000 && lo <= 5000;
+            if (budget === "¥5K-9K") return lo > 5000 && lo <= 9000;
+            if (budget === "¥8K-12K") return lo > 8000 && lo <= 12000;
+            if (budget === "¥15K+") return lo >= 15000;
+            return true;
+          });
+        }
+        if (query.trim()) {
+          const q = query.trim().toLowerCase();
+          list = list.filter((d) => d.name.toLowerCase().includes(q) || d.country.toLowerCase().includes(q) || d.tag.toLowerCase().includes(q));
+        }
+        return list;
+      }, [query, theme, budget]);
+
+      return (
+        <div className="app">
+          <Topbar />
+          <SearchHero query={query} onQuery={setQuery} />
+          <div className="explore-body">
+            <div className="filter-row">
+              <ThemeStrip active={theme} onSelect={setTheme} />
+              <div className="budget-filter">
+                {budgetFilter.map((b) => (
+                  <button key={b} className={`budget-chip ${budget === b ? "active" : ""}`} onClick={() => setBudget(b)}>{b}</button>
+                ))}
+              </div>
+            </div>
+            <div className="results-meta">
+              <span>共 {filtered.length} 个目的地</span>
+              {query && <span className="query-hint">「{query}」</span>}
+            </div>
+            {filtered.length === 0 ? (
+              <div className="empty-results">
+                <SearchIcon size={26} />
+                <h3>没有找到匹配的目的地</h3>
+                <p>试试换个关键词，或让 AI 帮你定制</p>
+                <button className="primary-btn" onClick={() => window.TravelMate.utils.go("assistant.html", { query })}>
+                  <WandIcon size={14} /> AI 规划行程
+                </button>
+              </div>
+            ) : (
+              <div className="dest-grid">
+                {filtered.map((d) => <DestCard key={d.id} item={d} />)}
+              </div>
+            )}
+            <AiPicks />
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .nav-links{display:flex;align-items:center;gap:calc(var(--spacing)*1.5)}
+    .nav-link{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3.5);border-radius:var(--radius);background:transparent;border:none;color:var(--muted-foreground);text-decoration:none;cursor:pointer;font-size:.9rem;transition:background .2s,color .2s}
+    .nav-link:hover{background:var(--primary-soft);color:var(--primary)}
+    .nav-link.active{color:var(--foreground);font-weight:600}
+
+    /* Search Hero */
+    .search-hero{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*9) calc(var(--spacing)*8) calc(var(--spacing)*5);display:flex;flex-direction:column;gap:calc(var(--spacing)*3);align-items:flex-start}
+    .search-hero h1{font-size:2rem;font-weight:700;letter-spacing:-0.02em}
+    .search-hero h1 span{color:var(--primary)}
+    .search-hero p{color:var(--muted-foreground);font-size:.95rem}
+    .hero-search-box{display:flex;align-items:center;gap:calc(var(--spacing)*3);width:100%;max-width:560px;padding:calc(var(--spacing)*2) calc(var(--spacing)*2) calc(var(--spacing)*2) calc(var(--spacing)*4);border:1px solid var(--input);border-radius:999px;background:var(--card);transition:border-color .2s,box-shadow .2s}
+    .hero-search-box:focus-within{border-color:var(--ring);box-shadow:0 0 0 3px rgba(66,133,244,.12)}
+    .hero-search-box svg{color:var(--muted-foreground);flex:0 0 auto}
+    .hero-search-box input{flex:1;border:none;outline:none;background:transparent;color:var(--foreground);font-size:.9rem;min-width:0}
+    .hero-search-box input::placeholder{color:var(--muted-foreground)}
+    .hero-search-btn{display:inline-flex;align-items:center;gap:.35rem;padding:calc(var(--spacing)*2.2) calc(var(--spacing)*3.5);border:none;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.8rem;cursor:pointer;transition:opacity .2s;white-space:nowrap}
+    .hero-search-btn:hover{opacity:.9}
+
+    /* Body */
+    .explore-body{max-width:1200px;margin:0 auto;padding:0 calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;gap:calc(var(--spacing)*6)}
+
+    /* Filters */
+    .filter-row{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*4);flex-wrap:wrap}
+    .theme-strip{display:flex;gap:calc(var(--spacing)*2);flex-wrap:wrap}
+    .theme-chip{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2) calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--muted-foreground);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s}
+    .theme-chip:hover{border-color:var(--primary);color:var(--primary)}
+    .theme-chip.active{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+    .theme-chip svg{color:var(--chip-color, var(--primary))}
+    .theme-chip.active svg{color:var(--primary-foreground)}
+    .budget-filter{display:flex;gap:calc(var(--spacing)*1.5);flex-wrap:wrap}
+    .budget-chip{padding:calc(var(--spacing)*1.8) calc(var(--spacing)*2.5);border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--muted-foreground);font-size:.76rem;cursor:pointer;transition:all .2s}
+    .budget-chip:hover{border-color:var(--primary);color:var(--primary)}
+    .budget-chip.active{background:var(--muted);border-color:var(--border);color:var(--foreground);font-weight:600}
+
+    /* Results */
+    .results-meta{font-size:.84rem;color:var(--muted-foreground);display:flex;gap:calc(var(--spacing)*3);align-items:center}
+    .query-hint{padding:.25rem .6rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.74rem}
+
+    /* Dest Grid */
+    .dest-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--spacing)*4)}
+    .dest-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden;cursor:pointer;transition:border-color .2s}
+    .dest-card:hover{border-color:var(--ring)}
+    .dest-card:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+    .dest-cover-wrap{position:relative}
+    .dest-img{width:100%;height:150px;object-fit:cover;display:block}
+    .dest-tag{position:absolute;top:10px;left:10px;padding:.25rem .6rem;border-radius:999px;background:rgba(14,17,21,.55);backdrop-filter:blur(4px);color:#fff;font-size:.72rem;font-weight:600}
+    .dest-rating{position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;gap:.2rem;padding:.25rem .6rem;border-radius:999px;background:rgba(255,255,255,.9);color:var(--chart-3);font-size:.72rem;font-weight:700}
+    .dest-body{padding:calc(var(--spacing)*3.5)}
+    .dest-name-row{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*2);margin-bottom:calc(var(--spacing)*2)}
+    .dest-name{font-size:.92rem}
+    .dest-country{font-size:.74rem;color:var(--muted-foreground)}
+    .dest-meta{display:flex;gap:calc(var(--spacing)*3);font-size:.74rem;color:var(--muted-foreground)}
+    .dest-meta span{display:inline-flex;align-items:center;gap:.3rem}
+
+    /* AI Picks */
+    .ai-picks{display:flex;flex-direction:column;gap:calc(var(--spacing)*4);padding-top:calc(var(--spacing)*2);border-top:1px solid var(--border)}
+    .section-head{display:flex;justify-content:space-between;align-items:center}
+    .section-head h2{display:inline-flex;align-items:center;gap:.5rem;font-size:1.25rem;font-weight:700}
+    .section-head h2 svg{color:var(--primary)}
+    .view-all{display:inline-flex;align-items:center;gap:.3rem;border:0;background:transparent;color:var(--primary);font-size:.86rem;font-weight:600;cursor:pointer}
+    .view-all:hover{text-decoration:underline}
+    .ai-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*4)}
+    .ai-card{border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);padding:calc(var(--spacing)*4);cursor:pointer;transition:border-color .2s;display:flex;flex-direction:column;gap:calc(var(--spacing)*2)}
+    .ai-card:hover{border-color:var(--ring)}
+    .ai-card-icon{width:36px;height:36px;border-radius:var(--radius);display:grid;place-items:center;background:var(--muted);color:var(--primary)}
+    .ai-card h3{font-size:.95rem;font-weight:700}
+    .ai-card p{font-size:.82rem;color:var(--muted-foreground);line-height:1.55}
+
+    /* Empty */
+    .empty-results{display:flex;flex-direction:column;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*9) calc(var(--spacing)*4);text-align:center;color:var(--muted-foreground)}
+    .empty-results h3{font-size:1.05rem;font-weight:700;color:var(--foreground)}
+    .empty-results p{font-size:.86rem}
+    .primary-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4.5);border:none;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.86rem;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .dest-grid{grid-template-columns:repeat(3,1fr)}
+      .search-hero,.explore-body{padding-left:calc(var(--spacing)*5);padding-right:calc(var(--spacing)*5)}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4)}
+      .nav-links{display:none}
+      .search-hero{padding:calc(var(--spacing)*6) calc(var(--spacing)*4) calc(var(--spacing)*4)}
+      .search-hero h1{font-size:1.6rem}
+      .explore-body{padding:0 calc(var(--spacing)*4) calc(var(--spacing)*8)}
+      .dest-grid,.ai-grid{grid-template-columns:1fr}
+      .hero-search-box{flex-wrap:wrap}
+      .hero-search-btn{width:100%;justify-content:center}
+    }
+  </style>
+</body>
+</html>

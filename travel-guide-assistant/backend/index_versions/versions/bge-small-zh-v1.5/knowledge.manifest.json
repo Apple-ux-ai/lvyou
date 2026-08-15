@@ -1,0 +1,104 @@
+{
+  "manifest_version": 1,
+  "collection": "knowledge",
+  "chunking_version": "section-v1",
+  "embedding": {
+    "provider": "SentenceTransformerEmbedding",
+    "model_id": "BAAI/bge-small-zh-v1.5",
+    "version": "bge-small-zh-v1.5",
+    "dimension": 512,
+    "normalized": true
+  },
+  "sources": {
+    "iceland": {
+      "path": "destinations/iceland.md",
+      "content_hash": "68c89e762907556ec4da8e4ac6a4630723399b88574d08f53e0b69ff11e36f6d",
+      "chunk_count": 2,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "japan-kansai": {
+      "path": "destinations/japan-kansai.md",
+      "content_hash": "35a29ba5879d743b42bf0c7a3341667e9a83d6df437074f6bd0bb8e7b91fb31a",
+      "chunk_count": 2,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "thailand-bangkok": {
+      "path": "destinations/thailand-bangkok.md",
+      "content_hash": "f397c31f2b6a98b6ba9eca30fb4c30ea0726dbb2e413856f34d8bda1f69ed6c1",
+      "chunk_count": 2,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "bangkok-4day-city-food": {
+      "path": "guides/bangkok-4day-city-food.md",
+      "content_hash": "78420560855fa05832cab422d0fb9d4b0afa174ff01c788ff7c0992a4c12214f",
+      "chunk_count": 3,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "dali-4day-slow": {
+      "path": "guides/dali-4day-slow.md",
+      "content_hash": "ca8d569ad09a2caf9f52ef44dab536f605580b54990ae1e39812ba4ca8dd58f8",
+      "chunk_count": 3,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "iceland-aurora-8day": {
+      "path": "guides/iceland-aurora-8day.md",
+      "content_hash": "e27d42228ef710c87f7ad3bc179a9921d53e7ec16db1e117957b7f0d7c9bc695",
+      "chunk_count": 3,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "kansai-7day-family": {
+      "path": "guides/kansai-7day-family.md",
+      "content_hash": "ff0253c8f4147922b12241b3ed7bff79e70088525a787749e3279308267ec801",
+      "chunk_count": 3,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "kansai-iceland-pois": {
+      "path": "pois/kansai-iceland-pois.md",
+      "content_hash": "1b7d75a532814a07a2c0c6aef22da21e916a55926727dc9b60a30f9ec42136ad",
+      "chunk_count": 3,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "japan-visa": {
+      "path": "tools/japan-visa.md",
+      "content_hash": "cdb5d21aa751dd9679ba3ed9dce949a137023be74457b6ab266f8f35bcda794e",
+      "chunk_count": 2,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    },
+    "kansai-7d": {
+      "path": "itineraries/kansai-7d.json",
+      "content_hash": "4e5ad3bce37b7c3b825ae63e61f41ad4266847bdd3926b948016a0c0dde36fbc",
+      "chunk_count": 5,
+      "chunking_version": "section-v1",
+      "embedding_model": "BAAI/bge-small-zh-v1.5",
+      "embedding_version": "bge-small-zh-v1.5",
+      "embedding_dimension": 512
+    }
+  }
+}

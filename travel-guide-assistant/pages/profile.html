@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 个人中心</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="../node_modules/react/umd/react.development.js"></script>
+  <script src="../node_modules/react-dom/umd/react-dom.development.js"></script>
+  <script src="../node_modules/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    /* ── SVG Icons ── */
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function ArrowLeftIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>; }
+    function ArrowRightIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>; }
+    function MapPinIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+    function ClockIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function WalletIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>; }
+    function EyeIcon({ size = 13 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>; }
+    function ThumbsUpIcon({ size = 13 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>; }
+    function BookmarkIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>; }
+    function FileTextIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>; }
+    function SettingsIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>; }
+    function BellIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>; }
+    function LogOutIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>; }
+    function PenIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>; }
+    function PlusIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>; }
+    function TrashIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>; }
+    function WandIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>; }
+
+    /* ── Data ── */
+    const myTrips = [
+      { id: "t1", dest: "京都 · 日本", days: "7 天", budget: "¥8,500", time: "2026-05", cover: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500&h=280&fit=crop", status: "已规划" },
+      { id: "t2", dest: "大理 · 云南", days: "4 天", budget: "¥3,500", time: "2026-03", cover: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=500&h=280&fit=crop", status: "已完成" },
+      { id: "t3", dest: "冰岛 · 极光之旅", days: "8 天", budget: "¥22,000", time: "2026-01", cover: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=500&h=280&fit=crop", status: "规划中" }
+    ];
+
+    const myGuides = [
+      { id: "g1", title: "关西 7 天经典家庭线路攻略", views: "12.4K", likes: 386, time: "2026-05-18", cover: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&h=240&fit=crop" },
+      { id: "g2", title: "大阪环球影城一日速通攻略", views: "3.2K", likes: 128, time: "2026-06-02", cover: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400&h=240&fit=crop" }
+    ];
+
+    const myFavorites = [
+      { id: "f1", type: "攻略", title: "冰岛冬季追极光 8 天自驾攻略", time: "收藏于 2026-06" },
+      { id: "f2", type: "目的地", title: "大理 · 苍山洱海", time: "收藏于 2026-05" },
+      { id: "f3", type: "行程", title: "京都 7 天家庭游（草稿）", time: "收藏于 2026-04" }
+    ];
+
+    const tabs = [
+      { id: "trips", label: "我的行程", icon: <MapPinIcon size={14} /> },
+      { id: "guides", label: "我的攻略", icon: <FileTextIcon size={14} /> },
+      { id: "favorites", label: "收藏夹", icon: <BookmarkIcon size={14} /> },
+      { id: "settings", label: "设置", icon: <SettingsIcon size={14} /> }
+    ];
+
+    /* ── Components ── */
+    function Topbar() {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <nav className="nav-links">
+              <a className="nav-link" href="home.html">首页</a>
+              <a className="nav-link" href="explore.html">目的地</a>
+              <a className="nav-link" href="guides.html">攻略</a>
+              <a className="nav-link" href="community.html">社区</a>
+              <a className="nav-link active" href="profile.html">我的</a>
+            </nav>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <div className="avatar">旅</div>
+          </div>
+        </header>
+      );
+    }
+
+    const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+    const AVATAR_SIZE = 256;
+
+    function compressAvatar(file) {
+      return new Promise((resolve, reject) => {
+        if (!file || !file.type || !file.type.startsWith("image/")) {
+          reject(new Error("请选择图片文件"));
+          return;
+        }
+        if (file.size > MAX_AVATAR_BYTES) {
+          reject(new Error("头像文件不能超过 5MB"));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("头像处理失败，请换一张图片"));
+        reader.onload = () => {
+          const image = new Image();
+          image.onerror = () => reject(new Error("头像处理失败，请换一张图片"));
+          image.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = AVATAR_SIZE;
+            canvas.height = AVATAR_SIZE;
+            const context = canvas.getContext("2d");
+            if (!context) {
+              reject(new Error("头像处理失败，请换一张图片"));
+              return;
+            }
+
+            const scale = Math.min(AVATAR_SIZE / image.width, AVATAR_SIZE / image.height);
+            const width = Math.max(1, Math.round(image.width * scale));
+            const height = Math.max(1, Math.round(image.height * scale));
+            const x = Math.round((AVATAR_SIZE - width) / 2);
+            const y = Math.round((AVATAR_SIZE - height) / 2);
+            context.fillStyle = "#f1f5f9";
+            context.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
+            context.drawImage(image, x, y, width, height);
+
+            try {
+              resolve(canvas.toDataURL("image/jpeg", 0.82));
+            } catch (error) {
+              reject(new Error("头像处理失败，请换一张图片"));
+            }
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function ProfileHero({ user, tripCount, onEdit }) {
+      const initial = user ? (user.name || "旅").slice(0, 1) : "旅";
+      return (
+        <div className="profile-hero">
+          <div className="hero-cover"></div>
+          <div className="hero-content">
+            <div className="profile-avatar">
+              {user && user.avatar
+                ? <img className="profile-avatar-image" src={user.avatar} alt={`${user.name || "用户"}的头像`} />
+                : <span className="profile-avatar-fallback">{initial}</span>}
+            </div>
+            <div className="profile-info">
+              <h1>{user ? user.name : "未登录"}</h1>
+              <p>{user && user.isGuest ? "游客模式 · 登录后同步数据" : user ? user.email : "登录后体验完整功能"}</p>
+            </div>
+            <div className="profile-stats">
+              <div className="stat"><strong>{tripCount}</strong><span>行程</span></div>
+              <div className="stat"><strong>2</strong><span>攻略</span></div>
+              <div className="stat"><strong>5</strong><span>收藏</span></div>
+            </div>
+            <button type="button" className="edit-btn" onClick={onEdit}><PenIcon size={13} /> 编辑资料</button>
+          </div>
+        </div>
+      );
+    }
+
+    function EditProfileDialog({ user, onClose, onSave }) {
+      const [name, setName] = useState(user ? user.name : "");
+      const [email, setEmail] = useState(user && user.email ? user.email : "");
+      const [avatar, setAvatar] = useState(user && user.avatar ? user.avatar : "");
+      const [error, setError] = useState("");
+      const [avatarError, setAvatarError] = useState("");
+
+      const draftInitial = (name || (user && user.name) || "旅").slice(0, 1);
+
+      const handleAvatarChange = (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        compressAvatar(file).then((dataUrl) => {
+          setAvatar(dataUrl);
+          setAvatarError("");
+        }).catch((avatarProcessingError) => {
+          setAvatarError(avatarProcessingError.message || "头像处理失败，请换一张图片");
+        });
+        event.target.value = "";
+      };
+
+      const handleSubmit = (event) => {
+        event.preventDefault();
+        const trimmedName = name.trim();
+        const trimmedEmail = email.trim();
+        if (!trimmedName) {
+          setError("请输入昵称");
+          return;
+        }
+        if (trimmedEmail && !/.+@.+\..+/.test(trimmedEmail)) {
+          setError("请输入有效的邮箱地址");
+          return;
+        }
+        onSave({
+          ...(user || {}),
+          name: trimmedName,
+          email: trimmedEmail || null,
+          avatar,
+          isGuest: false,
+          joinedAt: user && user.joinedAt ? user.joinedAt : new Date().toISOString()
+        });
+      };
+
+      return (
+        <div className="profile-modal-backdrop">
+          <section className="profile-modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title">
+            <div className="profile-modal-head">
+              <div>
+                <h2 id="edit-profile-title">编辑个人资料</h2>
+                <p>这些信息仅保存在当前浏览器中。</p>
+              </div>
+              <button type="button" className="modal-close" onClick={onClose} aria-label="关闭编辑资料">×</button>
+            </div>
+            <form className="profile-form" onSubmit={handleSubmit}>
+              <div className="avatar-editor">
+                <div className="avatar-editor-preview" data-testid="avatar-preview">
+                  {avatar
+                    ? <img className="profile-avatar-image" src={avatar} alt="头像预览" />
+                    : <span className="profile-avatar-fallback">{draftInitial}</span>}
+                </div>
+                <div className="avatar-editor-copy">
+                  <strong>头像</strong>
+                  <span>选择一张图片，保存在当前浏览器。</span>
+                  <div className="avatar-editor-actions">
+                    <label className="ghost-btn avatar-upload-label" htmlFor="profile-avatar-input">选择头像</label>
+                    <button type="button" className="ghost-btn" onClick={() => setAvatar("")} disabled={!avatar}>移除头像</button>
+                  </div>
+                  <input id="profile-avatar-input" className="avatar-file-input" type="file" accept="image/*" onChange={handleAvatarChange} />
+                </div>
+              </div>
+              {avatarError && <p className="form-error" role="alert">{avatarError}</p>}
+              <label className="profile-field" htmlFor="profile-name">
+                <span>昵称</span>
+                <input id="profile-name" value={name} onChange={(event) => setName(event.target.value)} autoComplete="nickname" />
+              </label>
+              <label className="profile-field" htmlFor="profile-email">
+                <span>邮箱</span>
+                <input id="profile-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" placeholder="name@example.com" />
+              </label>
+              {error && <p className="form-error" role="alert">{error}</p>}
+              <div className="profile-form-actions">
+                <button type="button" className="ghost-btn" onClick={onClose}>取消</button>
+                <button type="submit" className="primary-btn">保存资料</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      );
+    }
+
+    function TripCard({ trip }) {
+      const cover = trip.cover || "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=500&h=280&fit=crop";
+      const budget = trip.total_budget == null ? "预算待估算" : `¥${trip.total_budget.toLocaleString()}`;
+      const updated = trip.updated_at ? new Date(trip.updated_at).toLocaleDateString("zh-CN") : "刚刚保存";
+      return (
+        <article className="trip-card" onClick={() => window.TravelMate.utils.go("planner.html", { tripId: trip.id })} role="link" tabIndex="0" onKeyDown={(event) => { if (event.key === "Enter") window.TravelMate.utils.go("planner.html", { tripId: trip.id }); }}>
+          <img className="trip-cover" src={cover} alt={trip.destination} loading="lazy" />
+          <div className="trip-body">
+            <div className="trip-head">
+              <strong>{trip.destination}</strong>
+              <span className="status-pill planning">已保存</span>
+            </div>
+            <div className="trip-meta">
+              <span><ClockIcon size={12} /> {trip.days} 天</span>
+              <span><WalletIcon size={12} /> {budget}</span>
+              <span>{updated}</span>
+            </div>
+          </div>
+        </article>
+      );
+    }
+
+    function GuideItem({ guide }) {
+      return (
+        <article className="guide-item" onClick={() => window.TravelMate.utils.go("guide-detail.html", { id: guide.id })} role="link" tabIndex="0">
+          <img className="guide-item-cover" src={guide.cover} alt={guide.title} loading="lazy" />
+          <div className="guide-item-body">
+            <h3>{guide.title}</h3>
+            <div className="guide-item-meta">
+              <span><EyeIcon size={12} /> {guide.views}</span>
+              <span><ThumbsUpIcon size={12} /> {guide.likes}</span>
+              <span>{guide.time}</span>
+            </div>
+          </div>
+        </article>
+      );
+    }
+
+    function TripsTab({ user, trips, loading, error, onRetry }) {
+      return (
+        <div className="tab-content">
+          <div className="tab-head">
+            <h2>我的行程</h2>
+            <button className="primary-btn sm" onClick={() => window.TravelMate.utils.go("assistant.html")}>
+              <PlusIcon size={13} /> 新建行程
+            </button>
+          </div>
+          {loading && <div className="trip-state">正在加载已保存行程...</div>}
+          {!loading && error && (
+            <div className="trip-state error" role="alert">
+              <strong>行程暂时无法加载</strong>
+              <span>{error}</span>
+              <button className="ghost-btn" onClick={onRetry}>重试</button>
+            </div>
+          )}
+          {!loading && !error && trips.length === 0 && (
+            <div className="trip-state">
+              <strong>还没有保存的行程</strong>
+              <span>从一次 AI 规划开始，保存后会显示在这里。</span>
+              <button className="primary-btn sm" onClick={() => window.TravelMate.utils.go("assistant.html")}>开始规划</button>
+            </div>
+          )}
+          {!loading && !error && trips.length > 0 && (
+            <div className="trips-grid">
+              {trips.map((trip) => <TripCard key={trip.id} trip={trip} />)}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function GuidesTab() {
+      return (
+        <div className="tab-content">
+          <div className="tab-head">
+            <h2>我的攻略</h2>
+            <button className="primary-btn sm" onClick={() => window.TravelMate.utils.go("guides.html")}>
+              <WandIcon size={13} /> 发布攻略
+            </button>
+          </div>
+          <div className="guide-list">
+            {myGuides.map((g) => <GuideItem key={g.id} guide={g} />)}
+          </div>
+        </div>
+      );
+    }
+
+    function FavoritesTab() {
+      return (
+        <div className="tab-content">
+          <div className="tab-head">
+            <h2>收藏夹</h2>
+          </div>
+          <div className="fav-list">
+            {myFavorites.map((f) => (
+              <div key={f.id} className="fav-item">
+                <div className="fav-type">{f.type}</div>
+                <div className="fav-info">
+                  <strong>{f.title}</strong>
+                  <span>{f.time}</span>
+                </div>
+                <button className="fav-remove" aria-label="取消收藏"><TrashIcon size={14} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function SettingsTab({ user, onLogout }) {
+      const [themeMode, setThemeMode] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const [notifications, setNotifications] = useState(() => {
+        try {
+          const saved = JSON.parse(localStorage.getItem("travelmate-notification-settings"));
+          return { tripReminders: saved?.tripReminders !== false, guideUpdates: saved?.guideUpdates === true };
+        } catch (error) {
+          return { tripReminders: true, guideUpdates: false };
+        }
+      });
+      const [notificationStatus, setNotificationStatus] = useState("");
+      const toggleTheme = () => setThemeMode(window.TravelMate.utils.toggleTheme());
+      const toggleNotification = (key) => {
+        setNotifications((current) => {
+          const next = { ...current, [key]: !current[key] };
+          try { localStorage.setItem("travelmate-notification-settings", JSON.stringify(next)); } catch (error) { /* Ignore unavailable storage. */ }
+          return next;
+        });
+        setNotificationStatus("通知设置已保存");
+      };
+      return (
+        <div className="tab-content">
+          <div className="tab-head">
+            <h2>设置</h2>
+          </div>
+          <div className="settings-group">
+            <h3 className="settings-title">外观</h3>
+            <div className="setting-row">
+              <div>
+                <strong>深色模式</strong>
+                <span>切换站点明暗主题</span>
+              </div>
+              <button className={`switch ${themeMode === "dark" ? "on" : ""}`} onClick={toggleTheme} aria-label="切换深色模式">
+                <span className="switch-knob"></span>
+              </button>
+            </div>
+          </div>
+          <div className="settings-group">
+            <h3 className="settings-title">通知</h3>
+            <div className="setting-row">
+              <div>
+                <strong>行程提醒</strong>
+                <span>出发前提醒你准备行李</span>
+              </div>
+              <button type="button" className={`switch ${notifications.tripReminders ? "on" : ""}`} onClick={() => toggleNotification("tripReminders")} aria-label="行程提醒" aria-pressed={notifications.tripReminders}>
+                <span className="switch-knob"></span>
+              </button>
+            </div>
+            <div className="setting-row">
+              <div>
+                <strong>攻略更新</strong>
+                <span>订阅的攻略有新内容时通知</span>
+              </div>
+              <button type="button" className={`switch ${notifications.guideUpdates ? "on" : ""}`} onClick={() => toggleNotification("guideUpdates")} aria-label="攻略更新" aria-pressed={notifications.guideUpdates}>
+                <span className="switch-knob"></span>
+              </button>
+            </div>
+            <p className="settings-feedback" role="status">{notificationStatus}</p>
+          </div>
+          <div className="settings-group">
+            <h3 className="settings-title">账号</h3>
+            <div className="setting-row">
+              <div>
+                <strong>{user ? (user.isGuest ? "游客模式" : "邮箱账号") : "未登录"}</strong>
+                <span>{user ? (user.email || "以游客身份使用中") : "登录后同步数据"}</span>
+              </div>
+              {!user && (
+                <button className="ghost-btn" onClick={() => window.TravelMate.utils.go("auth.html")}>去登录</button>
+              )}
+            </div>
+            <div className="setting-row danger">
+              <div>
+                <strong>退出登录</strong>
+                <span>清除本地会话数据</span>
+              </div>
+              <button className="danger-btn" onClick={onLogout}><LogOutIcon size={14} /> 退出</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [activeTab, setActiveTab] = useState("trips");
+      const [trips, setTrips] = useState([]);
+      const [tripsLoading, setTripsLoading] = useState(true);
+      const [tripsError, setTripsError] = useState("");
+      const [editingProfile, setEditingProfile] = useState(false);
+      const [profileStatus, setProfileStatus] = useState("");
+
+      const loadTrips = () => {
+        setTripsLoading(true);
+        setTripsError("");
+        window.TravelMate.api.listTrips((savedTrips) => {
+          setTrips(savedTrips || []);
+          setTripsLoading(false);
+        }, (error) => {
+          setTripsLoading(false);
+          setTripsError(error && error.message ? error.message : "请确认后端服务已启动");
+        });
+      };
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+        setUser(window.TravelMate.utils.getSession());
+        loadTrips();
+      }, []);
+
+      const handleLogout = () => {
+        window.TravelMate.utils.clearSession();
+        setUser(null);
+        window.TravelMate.utils.go("home.html");
+      };
+
+      const handleProfileSave = (nextUser) => {
+        window.TravelMate.utils.setSession(nextUser);
+        setUser(nextUser);
+        setEditingProfile(false);
+        setProfileStatus("个人资料已保存");
+      };
+
+      return (
+        <div className="app">
+          <Topbar />
+          <div className="profile-page">
+            <ProfileHero user={user} tripCount={trips.length} onEdit={() => setEditingProfile(true)} />
+            <div className="profile-layout">
+              <nav className="profile-tabs">
+                {tabs.map((t) => (
+                  <button key={t.id} className={`profile-tab ${activeTab === t.id ? "active" : ""}`} onClick={() => setActiveTab(t.id)}>
+                    {t.icon} {t.label}
+                  </button>
+                ))}
+              </nav>
+              <div className="profile-panel">
+                {activeTab === "trips" && <TripsTab user={user} trips={trips} loading={tripsLoading} error={tripsError} onRetry={loadTrips} />}
+                {activeTab === "guides" && <GuidesTab />}
+                {activeTab === "favorites" && <FavoritesTab />}
+                {activeTab === "settings" && <SettingsTab user={user} onLogout={handleLogout} />}
+              </div>
+            </div>
+            {profileStatus && <div className="profile-toast" role="status">{profileStatus}</div>}
+            {editingProfile && <EditProfileDialog user={user} onClose={() => setEditingProfile(false)} onSave={handleProfileSave} />}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .nav-links{display:flex;align-items:center;gap:calc(var(--spacing)*1.5)}
+    .nav-link{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3.5);border-radius:var(--radius);background:transparent;border:none;color:var(--muted-foreground);text-decoration:none;cursor:pointer;font-size:.9rem;transition:background .2s,color .2s}
+    .nav-link:hover{background:var(--primary-soft);color:var(--primary)}
+    .nav-link.active{color:var(--foreground);font-weight:600}
+
+    /* Profile Hero */
+    .profile-hero{position:relative;background:var(--card);border-bottom:1px solid var(--border)}
+    .hero-cover{position:absolute;inset:0;background:linear-gradient(120deg,var(--muted) 0%,rgba(66,133,244,.15) 100%);opacity:.6}
+     .hero-content{position:relative;max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*7) calc(var(--spacing)*8);display:flex;align-items:center;gap:calc(var(--spacing)*5);flex-wrap:wrap}
+     .profile-avatar{width:76px;height:76px;flex:0 0 76px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-size:1.8rem;font-weight:700;border:3px solid var(--card);box-shadow:0 0 0 1px var(--border)}
+     .profile-avatar-image{width:100%;height:100%;display:block;border-radius:inherit;object-fit:cover}
+     .profile-avatar-fallback{display:grid;place-items:center;width:100%;height:100%}
+    .profile-info{flex:1;min-width:160px}
+    .profile-info h1{font-size:1.4rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:.2rem}
+    .profile-info p{color:var(--muted-foreground);font-size:.85rem}
+    .profile-stats{display:flex;gap:calc(var(--spacing)*5);padding:0 calc(var(--spacing)*4)}
+    .stat{text-align:center}
+    .stat strong{display:block;font-size:1.3rem;font-weight:700}
+    .stat span{font-size:.76rem;color:var(--muted-foreground)}
+    .edit-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4);border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--foreground);font-size:.82rem;font-weight:600;cursor:pointer;transition:background .2s}
+    .edit-btn:hover{background:var(--primary-soft)}
+
+    /* Layout */
+    .profile-layout{max-width:1200px;margin:0 auto;padding:calc(var(--spacing)*6) calc(var(--spacing)*8) calc(var(--spacing)*10);display:grid;grid-template-columns:220px 1fr;gap:calc(var(--spacing)*7);align-items:start}
+
+    /* Tabs */
+    .profile-tabs{display:flex;flex-direction:column;gap:calc(var(--spacing)*1.5);position:sticky;top:84px}
+    .profile-tab{display:flex;align-items:center;gap:.55rem;padding:calc(var(--spacing)*3) calc(var(--spacing)*4);border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--muted-foreground);font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;text-align:left}
+    .profile-tab:hover{border-color:var(--primary);color:var(--primary)}
+    .profile-tab.active{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+    .profile-tab svg{flex:0 0 auto}
+
+    /* Panel */
+    .profile-panel{min-width:0}
+    .tab-content{display:flex;flex-direction:column;gap:calc(var(--spacing)*5)}
+    .tab-head{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*3)}
+    .tab-head h2{font-size:1.25rem;font-weight:700}
+    .primary-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4);border:none;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.84rem;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+    .primary-btn.sm{padding:calc(var(--spacing)*2) calc(var(--spacing)*3.5);font-size:.8rem}
+
+    /* Trips */
+     .trips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*4)}
+     .trip-state{display:flex;flex-direction:column;align-items:center;gap:calc(var(--spacing)*2);padding:calc(var(--spacing)*8);border:1px dashed var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);color:var(--muted-foreground);text-align:center;font-size:.84rem}
+     .trip-state strong{color:var(--foreground);font-size:.95rem}
+     .trip-state.error{border-color:rgba(234,67,53,.35);color:var(--chart-2)}
+    .trip-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden;cursor:pointer;transition:border-color .2s}
+    .trip-card:hover{border-color:var(--ring)}
+    .trip-cover{width:100%;height:130px;object-fit:cover;display:block}
+    .trip-body{padding:calc(var(--spacing)*3.5)}
+    .trip-head{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*2);margin-bottom:calc(var(--spacing)*2)}
+    .trip-head strong{font-size:.9rem}
+    .status-pill{padding:.2rem .55rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.7rem;font-weight:600;white-space:nowrap}
+    .status-pill.done{background:rgba(52,168,83,.14);color:var(--chart-5)}
+    .status-pill.planning{background:rgba(251,188,5,.18);color:var(--chart-3)}
+    .trip-meta{display:flex;gap:calc(var(--spacing)*3);font-size:.74rem;color:var(--muted-foreground);flex-wrap:wrap}
+    .trip-meta span{display:inline-flex;align-items:center;gap:.3rem}
+
+    /* Guides */
+    .guide-list{display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .guide-item{display:flex;gap:calc(var(--spacing)*4);align-items:center;padding:calc(var(--spacing)*3);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);cursor:pointer;transition:border-color .2s}
+    .guide-item:hover{border-color:var(--ring)}
+    .guide-item-cover{width:120px;height:76px;flex:0 0 120px;border-radius:var(--radius);object-fit:cover;display:block}
+    .guide-item-body{flex:1;min-width:0}
+    .guide-item-body h3{font-size:.92rem;font-weight:600;margin-bottom:calc(var(--spacing)*2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .guide-item-meta{display:flex;gap:calc(var(--spacing)*4);font-size:.74rem;color:var(--muted-foreground)}
+    .guide-item-meta span{display:inline-flex;align-items:center;gap:.3rem}
+
+    /* Favorites */
+    .fav-list{display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .fav-item{display:flex;align-items:center;gap:calc(var(--spacing)*3.5);padding:calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:var(--radius);background:var(--card)}
+    .fav-type{flex:0 0 auto;padding:.3rem .7rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.72rem;font-weight:600}
+    .fav-info{flex:1;min-width:0}
+    .fav-info strong{display:block;font-size:.9rem;margin-bottom:.15rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .fav-info span{font-size:.74rem;color:var(--muted-foreground)}
+    .fav-remove{flex:0 0 auto;width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--muted-foreground);cursor:pointer;transition:all .2s}
+    .fav-remove:hover{border-color:var(--chart-2);color:var(--chart-2)}
+
+    /* Settings */
+    .settings-group{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);overflow:hidden}
+    .settings-title{padding:calc(var(--spacing)*3.5) calc(var(--spacing)*4) 0;font-size:.8rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.04em}
+    .setting-row{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*4);padding:calc(var(--spacing)*4);border-top:1px solid var(--border)}
+    .setting-row:first-of-type{border-top:none}
+    .setting-row.danger{border-top:1px solid var(--border)}
+    .setting-row strong{display:block;font-size:.9rem;margin-bottom:.15rem}
+     .setting-row span{font-size:.78rem;color:var(--muted-foreground)}
+     .settings-feedback{min-height:1.1rem;padding:0 calc(var(--spacing)*4) calc(var(--spacing)*3.5);color:var(--chart-5);font-size:.78rem}
+    .switch{position:relative;width:44px;height:24px;flex:0 0 44px;border:none;border-radius:999px;background:var(--border);cursor:pointer;transition:background .2s}
+    .switch.on{background:var(--primary)}
+    .switch-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+    .switch.on .switch-knob{transform:translateX(20px)}
+    .ghost-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2) calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--foreground);font-weight:600;font-size:.8rem;cursor:pointer;transition:background .2s}
+    .ghost-btn:hover{background:var(--primary-soft)}
+    .danger-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2) calc(var(--spacing)*3.5);border:1px solid rgba(234,67,53,.35);border-radius:var(--radius);background:rgba(234,67,53,.06);color:var(--chart-2);font-weight:600;font-size:.8rem;cursor:pointer;transition:background .2s}
+     .danger-btn:hover{background:rgba(234,67,53,.12)}
+
+     /* Profile editing */
+     .profile-modal-backdrop{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:calc(var(--spacing)*4);background:rgba(15,23,42,.42)}
+     .profile-modal{width:min(100%,460px);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);box-shadow:var(--shadow-xl)}
+     .profile-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:calc(var(--spacing)*4);padding:calc(var(--spacing)*5);border-bottom:1px solid var(--border)}
+     .profile-modal-head h2{font-size:1.1rem;font-weight:700}
+     .profile-modal-head p{margin-top:calc(var(--spacing)*1);color:var(--muted-foreground);font-size:.78rem}
+     .modal-close{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--muted-foreground);font-size:1.25rem;line-height:1;cursor:pointer}
+     .modal-close:hover{background:var(--primary-soft);color:var(--primary)}
+     .profile-form{display:flex;flex-direction:column;gap:calc(var(--spacing)*4);padding:calc(var(--spacing)*5)}
+     .avatar-editor{display:flex;align-items:center;gap:calc(var(--spacing)*4);padding-bottom:calc(var(--spacing)*4);border-bottom:1px solid var(--border)}
+     .avatar-editor-preview{width:88px;height:88px;flex:0 0 88px;display:grid;place-items:center;overflow:hidden;border:3px solid var(--card);border-radius:50%;background:var(--primary);color:var(--primary-foreground);font-size:1.8rem;font-weight:700;box-shadow:0 0 0 1px var(--border)}
+     .avatar-editor-copy{display:flex;flex:1;flex-direction:column;gap:calc(var(--spacing)*1)}
+     .avatar-editor-copy strong{font-size:.9rem}
+     .avatar-editor-copy>span{color:var(--muted-foreground);font-size:.76rem}
+     .avatar-editor-actions{display:flex;align-items:center;gap:calc(var(--spacing)*2);margin-top:calc(var(--spacing)*1.5)}
+     .avatar-upload-label{cursor:pointer}
+     .avatar-file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;clip-path:inset(50%)}
+     .ghost-btn:disabled{cursor:not-allowed;opacity:.5}
+     .profile-field{display:grid;gap:calc(var(--spacing)*1.5);color:var(--foreground);font-size:.84rem;font-weight:600}
+     .profile-field input{width:100%;height:40px;padding:0 calc(var(--spacing)*3);border:1px solid var(--input);border-radius:var(--radius);background:var(--background);color:var(--foreground);outline:none;font-size:.9rem}
+     .profile-field input:focus{border-color:var(--ring);box-shadow:0 0 0 2px var(--primary-soft)}
+     .form-error{color:var(--chart-2);font-size:.8rem}
+     .profile-form-actions{display:flex;justify-content:flex-end;gap:calc(var(--spacing)*3)}
+     .profile-toast{position:fixed;right:calc(var(--spacing)*5);bottom:calc(var(--spacing)*5);z-index:150;padding:calc(var(--spacing)*3) calc(var(--spacing)*4);border:1px solid rgba(52,168,83,.25);border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow-md);color:var(--chart-5);font-size:.84rem;font-weight:600}
+
+     /* The shared menu is a mobile-only fallback; profile's .icon-btn must not surface it on desktop. */
+     .icon-btn.tm-nav-toggle{display:none}
+
+     /* Responsive */
+    @media (max-width:1024px){
+      .trips-grid{grid-template-columns:repeat(2,1fr)}
+      .profile-layout{padding-left:calc(var(--spacing)*5);padding-right:calc(var(--spacing)*5)}
+    }
+     @media (max-width:768px){
+       .topbar{padding:0 calc(var(--spacing)*4)}
+       .nav-links{display:none}
+       .icon-btn.tm-nav-toggle{display:grid}
+       .hero-content{padding:calc(var(--spacing)*5) calc(var(--spacing)*4);gap:calc(var(--spacing)*3)}
+      .profile-stats{display:none}
+      .profile-layout{grid-template-columns:1fr;padding:calc(var(--spacing)*4)}
+      .profile-tabs{position:static;flex-direction:row;overflow-x:auto;padding-bottom:calc(var(--spacing)*2)}
+      .profile-tab{white-space:nowrap}
+      .trips-grid{grid-template-columns:1fr}
+    }
+  </style>
+</body>
+</html>
