@@ -200,7 +200,7 @@ test("renders fact entries as a semantic definition list and keeps HTML inert", 
 });
 
 test("renders the balanced itinerary summary and omits absent optional fields", () => {
-  render(<ItineraryConversationSummary itinerary={{
+  render(<ItineraryConversationSummary itinerary={ {
     destination: "日本",
     days: 2,
     total_budget: null,
@@ -209,7 +209,7 @@ test("renders the balanced itinerary summary and omits absent optional fields", 
       { day: 1, title: "东京抵达" },
       { day: 2, title: "浅草漫步" }
     ]
-  }} previewHref="#itinerary-preview" />);
+  } } previewHref="#itinerary-preview" />);
   expect(screen.getByRole("heading", { name: "日本 2 天经典路线" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "查看完整行程" })).toHaveAttribute("href", "#itinerary-preview");
   expect(screen.queryByText(/预算/)).not.toBeInTheDocument();
