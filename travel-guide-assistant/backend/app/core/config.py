@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     )
 
     deepseek_api_key: SecretStr | None = None
-    deepseek_base_url: str = "https://api.deepseek.com/v1"
-    deepseek_model: str = "deepseek-chat"
+    deepseek_base_url: str = "https://api.deepseek.com"
+    deepseek_model: str = "deepseek-v4-flash"
     travelmate_llm_provider: Literal["auto", "local"] = "auto"
     travelmate_vector_backend: Literal["auto", "chroma", "json"] = "auto"
     travelmate_embedding_provider: Literal["auto", "hash", "sentence_transformers"] = "auto"

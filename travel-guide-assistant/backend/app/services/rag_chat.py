@@ -73,8 +73,11 @@ class DeepSeekLLMAdapter:
         transport: httpx.AsyncBaseTransport | None = None,
     ):
         self.api_key = api_key
-        self.base_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")).rstrip("/")
-        self.model = model or os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+        configured_base_url = (base_url or os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")).rstrip("/")
+        if configured_base_url == "https://api.deepseek.com/v1":
+            configured_base_url = "https://api.deepseek.com"
+        self.base_url = configured_base_url
+        self.model = model or os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
         self.timeout = timeout
         self.transport = transport
 
@@ -83,6 +86,7 @@ class DeepSeekLLMAdapter:
             payload = {"model": self.model, "messages": messages, "stream": False}
             if itinerary:
                 payload["response_format"] = {"type": "json_object"}
+                payload["thinking"] = {"type": "disabled"}
             async with httpx.AsyncClient(timeout=self.timeout, transport=self.transport) as client:
                 response = await client.post(
                     f"{self.base_url}/chat/completions",
@@ -94,8 +98,12 @@ class DeepSeekLLMAdapter:
             if not isinstance(content, str) or not content.strip():
                 raise ValueError("LLM response did not contain text")
             return content
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            detail = exc.response.text[:240].replace("\n", " ")
+            raise LLMTransportError(f"DeepSeek HTTP {status}: {detail}") from exc
         except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
-            raise LLMTransportError("DeepSeek request failed") from exc
+            raise LLMTransportError(f"DeepSeek request failed: {exc}") from exc
 
     async def stream(self, messages: list[dict[str, str]], itinerary: bool) -> AsyncIterator[str]:
         payload = {
@@ -105,6 +113,7 @@ class DeepSeekLLMAdapter:
         }
         if itinerary:
             payload["response_format"] = {"type": "json_object"}
+            payload["thinking"] = {"type": "disabled"}
 
         emitted = False
         try:
@@ -138,8 +147,12 @@ class DeepSeekLLMAdapter:
             raise
         except LLMTransportError:
             raise
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            detail = exc.response.text[:240].replace("\n", " ")
+            raise LLMTransportError(f"DeepSeek HTTP {status}: {detail}") from exc
         except (httpx.HTTPError, json.JSONDecodeError, KeyError, IndexError, TypeError, ValueError) as exc:
-            raise LLMTransportError("DeepSeek stream failed") from exc
+            raise LLMTransportError(f"DeepSeek stream failed: {exc}") from exc
 
 
 class DeterministicLocalLLM:
@@ -461,7 +474,8 @@ class RAGChatService:
     async def _complete(self, messages: list[dict[str, str]], itinerary: bool) -> str:
         try:
             return await self.llm.complete(messages, itinerary)
-        except LLMTransportError:
+        except LLMTransportError as exc:
+            logger.warning("Primary LLM failed; using local fallback: %s", exc)
             return await self.fallback_llm.complete(messages, itinerary)
 
     async def _stream_model_text(
@@ -479,7 +493,8 @@ class RAGChatService:
                         yield text
                 if emitted:
                     return
-            except LLMTransportError:
+            except LLMTransportError as exc:
+                logger.warning("Primary LLM stream failed; using local fallback: %s", exc)
                 if emitted:
                     raise
 
@@ -505,6 +520,8 @@ class RAGChatService:
                 "embedding_model",
                 getattr(self.retriever, "embedding_model", "unknown"),
             ),
+            "llm_provider": "deepseek" if isinstance(self.llm, DeepSeekLLMAdapter) else "local",
+            "llm_model": getattr(self.llm, "model", "deterministic-local"),
         }
 
     def _retrieve_context(self, query: str) -> tuple[list[Citation], list[Document]]:

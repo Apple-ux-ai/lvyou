@@ -176,6 +176,7 @@ async def test_deepseek_adapter_requests_json_for_itineraries():
     await adapter.complete([{"role": "user", "content": "Plan Kyoto"}], itinerary=True)
 
     assert captured["payload"]["response_format"] == {"type": "json_object"}
+    assert captured["payload"]["thinking"] == {"type": "disabled"}
 
 
 @pytest.mark.asyncio

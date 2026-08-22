@@ -35,3 +35,17 @@ class TestParseLlLMOutput:
         result = parse_llm_output(raw)
         assert result.type == "itinerary"
         assert result.itinerary.total_budget is None
+
+    def test_markdown_wrapped_json_returns_itinerary(self):
+        raw = '```json\n{"destination":"西安","days":2,"total_budget":1200,"day_plans":[],"tips":[]}\n```'
+        result = parse_llm_output(raw)
+        assert result.type == "itinerary"
+        assert result.itinerary is not None
+        assert result.itinerary.destination == "西安"
+
+    def test_json_with_leading_explanation_returns_itinerary(self):
+        raw = '下面是行程：\n{"destination":"成都","days":3,"total_budget":1800,"day_plans":[],"tips":[]}'
+        result = parse_llm_output(raw)
+        assert result.type == "itinerary"
+        assert result.itinerary is not None
+        assert result.itinerary.destination == "成都"

@@ -23,12 +23,8 @@ def parse_llm_output(raw: str) -> ParseResult:
     if not raw or not raw.strip():
         return ParseResult(type="text", text=raw, error_code="invalid_json")
 
-    try:
-        data = json.loads(raw)
-    except (json.JSONDecodeError, ValueError):
-        return ParseResult(type="text", text=raw, error_code="invalid_json")
-
-    if not isinstance(data, dict):
+    data = _extract_json_object(raw)
+    if data is None:
         return ParseResult(type="text", text=raw, error_code="invalid_json")
 
     try:
@@ -37,3 +33,19 @@ def parse_llm_output(raw: str) -> ParseResult:
         return ParseResult(type="text", text=raw, error_code="invalid_json")
 
     return ParseResult(type="itinerary", itinerary=itinerary)
+
+
+def _extract_json_object(raw: str) -> dict | None:
+    """Extract the first JSON object from plain, fenced, or prefixed model output."""
+    decoder = json.JSONDecoder()
+    text = raw.strip()
+    for index, char in enumerate(text):
+        if char != "{":
+            continue
+        try:
+            data, _end = decoder.raw_decode(text, index)
+        except (json.JSONDecodeError, ValueError):
+            continue
+        if isinstance(data, dict):
+            return data
+    return None

@@ -148,7 +148,7 @@ async def _chat_stream(payload: ChatRequest):
         }
         logger.info(
             "chat request_id=%s embedding_ms=%.1f retrieval_ms=%.1f llm_ms=%.1f "
-            "top_score=%.4f source_ids=%s embedding_model=%s total_ms=%.1f",
+            "top_score=%.4f source_ids=%s embedding_model=%s llm_provider=%s llm_model=%s total_ms=%.1f",
             chat_id,
             float(metrics.get("embedding_ms", 0.0)),
             float(metrics.get("retrieval_ms", 0.0)),
@@ -156,6 +156,8 @@ async def _chat_stream(payload: ChatRequest):
             float(metrics.get("top_score", 0.0)),
             metrics.get("source_ids", []),
             metrics.get("embedding_model", "unknown"),
+            metrics.get("llm_provider", "unknown"),
+            metrics.get("llm_model", "unknown"),
             float(metrics.get("total_ms", (time.perf_counter() - started_at) * 1000)),
         )
     except asyncio.CancelledError:
