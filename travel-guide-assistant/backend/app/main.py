@@ -6,11 +6,13 @@ import time
 import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.config import load_settings
+from app.core.rate_limit import ChatRateLimitGuard, ConcurrencyLimiter, get_client_key
 from app.models.schemas import ChatRequest, Itinerary, Trip
 from app.services.rag_chat import create_default_chat_service
 from app.services.trips import trip_store
@@ -18,6 +20,14 @@ from app.services.trips import trip_store
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 settings = load_settings()
+
+chat_rate_limit_guard = ChatRateLimitGuard(
+    per_ip_limit=settings.travelmate_rate_limit_per_window,
+    per_ip_window_seconds=settings.travelmate_rate_limit_window_seconds,
+    global_limit=settings.travelmate_global_chat_limit,
+    global_window_seconds=settings.travelmate_global_chat_window_seconds,
+)
+chat_concurrency_limiter = ConcurrencyLimiter(settings.travelmate_max_concurrent_chats)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -162,6 +172,11 @@ async def _chat_stream(payload: ChatRequest):
         }
 
 
+async def _limited_chat_stream(payload: ChatRequest):
+    async for event in chat_concurrency_limiter.stream(_chat_stream(payload)):
+        yield event
+
+
 def _public_error_message(code: str | None) -> str:
     messages = {
         "session_expired": "会话已过期，请重新开始对话。",
@@ -224,5 +239,19 @@ async def update_trip(trip_id: str, itinerary: Itinerary) -> Trip:
 
 
 @app.post("/api/chat")
-async def chat(payload: ChatRequest):
-    return EventSourceResponse(_chat_stream(payload), ping=15)
+async def chat(payload: ChatRequest, request: Request = None):
+    if settings.travelmate_rate_limit_enabled:
+        client_key = get_client_key(request) if request is not None else "direct-call"
+        decision = await chat_rate_limit_guard.check(client_key)
+        if not decision.allowed:
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "code": "rate_limited",
+                    "message": "请求太频繁，请稍后再试。",
+                    "retry_after": decision.retry_after,
+                },
+                headers={"Retry-After": str(decision.retry_after)},
+            )
+
+    return EventSourceResponse(_limited_chat_stream(payload), ping=15)

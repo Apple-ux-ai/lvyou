@@ -7,7 +7,7 @@
 
   var API_BASE = (typeof window.TravelMateConfig !== 'undefined' && window.TravelMateConfig.API_BASE)
     ? window.TravelMateConfig.API_BASE
-    : 'http://127.0.0.1:8000';
+    : 'https://travelmate-api-maw6.onrender.com';
 
   var THEME_KEY = 'travelmate-theme';
 

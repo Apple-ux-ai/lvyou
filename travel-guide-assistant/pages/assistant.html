@@ -39,6 +39,8 @@
     function LightbulbIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>; }
     function QuoteIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>; }
     function HistoryIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>; }
+    function PlusIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>; }
+    function StopIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="10" height="10" x="7" y="7" rx="2" ry="2"/></svg>; }
 
     /* ── Data ── */
     const suggestionQuestions = [
@@ -96,7 +98,7 @@
     }
 
     /* ── Components ── */
-    function Topbar({ onHome }) {
+    function Topbar({ onHome, onNewChat }) {
       const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
       const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
       return (
@@ -111,6 +113,9 @@
           <div className="topbar-right">
             <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
               {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <button className="ghost-btn sm new-chat-btn" onClick={onNewChat} title="清空当前对话，开始新对话">
+              <PlusIcon size={14} /> 新建对话
             </button>
             <a className="home-link" href="home.html">返回首页</a>
           </div>
@@ -309,7 +314,7 @@
       );
     }
 
-    function ChatPanel({ messages, onSend, streaming }) {
+    function ChatPanel({ messages, onSend, onStop, streaming }) {
       const [input, setInput] = useState("");
       const scrollRef = useRef(null);
 
@@ -347,9 +352,15 @@
               onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
               disabled={streaming}
             />
-            <button className="send-btn" onClick={handleSend} disabled={streaming || !input.trim()} aria-label="发送">
-              <SendIcon size={16} />
-            </button>
+            {streaming ? (
+              <button className="stop-btn" onClick={onStop} aria-label="停止生成" title="停止生成">
+                <StopIcon size={16} /> 停止
+              </button>
+            ) : (
+              <button className="send-btn" onClick={handleSend} disabled={!input.trim()} aria-label="发送">
+                <SendIcon size={16} />
+              </button>
+            )}
           </div>
         </div>
       );
@@ -374,6 +385,7 @@
       const streamDoneRef = useRef(false);
       const streamFinishedRef = useRef(false);
       const streamMsgIndexRef = useRef(-1);
+      const abortRef = useRef(null);
 
       useEffect(() => {
         saveChatHistory(messages);
@@ -465,10 +477,13 @@
         streamDoneRef.current = false;
         streamFinishedRef.current = false;
         streamMsgIndexRef.current = newMessages.length - 1;
+        if (abortRef.current) abortRef.current.abort();
+        abortRef.current = new AbortController();
 
         window.TravelMate.api.chatStream(
           text,
           {
+            signal: abortRef.current.signal,
             onMessage: (payload) => {
               streamTextRef.current += payload.text || "";
               streamTargetCharsRef.current = Array.from(cleanMarkdownForDisplay(streamTextRef.current));
@@ -488,13 +503,28 @@
               });
             },
             onDone: () => {
+              abortRef.current = null;
               streamDoneRef.current = true;
               if (!streamTargetCharsRef.current.length) {
                 streamTargetCharsRef.current = Array.from(cleanMarkdownForDisplay("已完成回答"));
               }
               startReveal(text);
             },
+            onAbort: () => {
+              clearStreamTimer();
+              if (streamFinishedRef.current) { abortRef.current = null; return; }
+              streamFinishedRef.current = true;
+              streamDoneRef.current = true;
+              const raw = streamTextRef.current || "";
+              const base = raw ? cleanMarkdownForDisplay(raw) : (streamDisplayTextRef.current || "");
+              const finalText = base ? base + "\n\n（已停止生成）" : "已停止生成，你可以继续提问或新建对话。";
+              updateStreamMessage(finalText, []);
+              abortRef.current = null;
+              setStreaming(false);
+              setPlanningPreview(false);
+            },
             onError: (payload) => {
+              abortRef.current = null;
               clearStreamTimer();
               if (payload && payload.code === "session_expired") {
                 const nextSessionId = createChatSessionId();
@@ -502,7 +532,9 @@
               }
               const errorText = payload && payload.code === "session_expired"
                 ? "会话已过期，已为你开启新的对话。"
-                : "连接服务失败，请确认后端已启动（python -m uvicorn app.main:app --port 8000）。";
+                : payload && payload.code === "rate_limited"
+                  ? `请求太频繁，请在 ${payload.retry_after || 60} 秒后再试。`
+                  : "连接服务失败，请确认后端已启动（python -m uvicorn app.main:app --port 8000）。";
               streamTargetCharsRef.current = Array.from(errorText);
               streamDisplayCharsRef.current = [...streamTargetCharsRef.current];
               streamDisplayTextRef.current = errorText;
@@ -516,6 +548,29 @@
           historyForRequest(messages),
           sessionId
         );
+      }
+
+      function cancelGeneration() {
+        if (!streaming || streamFinishedRef.current) return;
+        if (abortRef.current) abortRef.current.abort();
+      }
+
+      function newConversation() {
+        if (messages.length > 0 && !window.confirm("确定要新建对话吗？当前对话内容将被清空。")) return;
+        clearStreamTimer();
+        if (abortRef.current) abortRef.current.abort();
+        abortRef.current = null;
+        streamFinishedRef.current = true;
+        streamDoneRef.current = true;
+        setStreaming(false);
+        setPlanningPreview(false);
+        setMessages([]);
+        saveChatHistory([]);
+        setSessionId(createChatSessionId());
+        setItinerary(null);
+        setSavedTip(false);
+        setSavedTripId(null);
+        setSaveError("");
       }
 
       const handleSaveTrip = () => {
@@ -535,10 +590,10 @@
 
       return (
         <div className="app">
-          <Topbar />
+          <Topbar onNewChat={newConversation} />
           <div className="assistant-layout">
             <div className="chat-panel-wrap">
-              <ChatPanel messages={messages} onSend={sendMessage} streaming={streaming} />
+              <ChatPanel messages={messages} onSend={sendMessage} onStop={cancelGeneration} streaming={streaming} />
             </div>
             <aside className="preview-panel" id="itinerary-preview">
               <div className="preview-head">
@@ -678,6 +733,8 @@
     .send-btn{width:40px;height:40px;flex:0 0 40px;border-radius:50%;border:none;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;cursor:pointer;transition:opacity .2s}
     .send-btn:disabled{opacity:.4;cursor:default}
     .send-btn:not(:disabled):hover{opacity:.85}
+    .stop-btn{height:40px;flex:0 0 auto;display:inline-flex;align-items:center;gap:.4rem;padding:0 calc(var(--spacing)*4);border:none;border-radius:999px;background:var(--chart-2);color:#fff;font-weight:600;font-size:.86rem;cursor:pointer;transition:opacity .2s}
+    .stop-btn:hover{opacity:.85}
 
     /* Preview Panel */
     .preview-panel{min-width:0;min-height:0;height:100%;display:flex;flex-direction:column;gap:calc(var(--spacing)*4);overflow-y:auto;overscroll-behavior:contain;scroll-margin-top:calc(var(--spacing)*4);padding-right:calc(var(--spacing)*1)}

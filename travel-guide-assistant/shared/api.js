@@ -21,7 +21,23 @@
 
     return fetch(API_BASE + '/api/chat', requestOptions)
       .then(function (resp) {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        if (!resp.ok) {
+          if (resp.status === 429 && typeof resp.json === 'function') {
+            return resp.json().then(function (payload) {
+              var error = new Error(
+                payload && payload.message
+                  ? payload.message
+                  : '请求太频繁，请稍后再试。'
+              );
+              error.code = (payload && payload.code) || 'rate_limited';
+              if (payload && payload.retry_after !== undefined) {
+                error.retry_after = payload.retry_after;
+              }
+              throw error;
+            });
+          }
+          throw new Error('HTTP ' + resp.status);
+        }
         if (!resp.body) throw new Error('Response body not readable');
         var reader = resp.body.getReader();
         var decoder = new TextDecoder('utf-8');
@@ -69,7 +85,15 @@
           if (h.onAbort) h.onAbort();
           return;
         }
-        if (h.onError) h.onError({ code: 'network_error', message: err.message || String(err) });
+        if (h.onError) {
+          if (err && err.code) {
+            var errorPayload = { code: err.code, message: err.message || String(err) };
+            if (err.retry_after !== undefined) errorPayload.retry_after = err.retry_after;
+            h.onError(errorPayload);
+            return;
+          }
+          h.onError({ code: 'network_error', message: err.message || String(err) });
+        }
       });
   }
 

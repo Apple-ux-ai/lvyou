@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     travelmate_embedding_device: str = "cpu"
     travelmate_embedding_batch_size: int = Field(default=32, ge=1, le=256)
     travelmate_embedding_dimension: int = Field(default=1024, ge=8, le=8192)
+    travelmate_embedding_lora_path: str = ""  # 可选：LoRA 适配器路径
     # Hash embeddings are an explicit offline mode; production must fail fast
     # when the configured semantic model is unavailable.
     travelmate_embedding_allow_fallback: bool = False
@@ -38,6 +39,13 @@ class Settings(BaseSettings):
     travelmate_retrieval_lexical_weight: float = Field(default=0.45, ge=0.0, le=1.0)
     travelmate_cors_origins: str = "http://127.0.0.1:5501,http://localhost:5501"
     travelmate_max_sessions: int = Field(default=1000, ge=1, le=100_000)
+    # Optional in-memory protection for a public single-instance demo.
+    travelmate_rate_limit_enabled: bool = False
+    travelmate_rate_limit_per_window: int = Field(default=5, ge=1, le=10_000)
+    travelmate_rate_limit_window_seconds: int = Field(default=600, ge=1, le=86_400)
+    travelmate_global_chat_limit: int = Field(default=100, ge=1, le=1_000_000)
+    travelmate_global_chat_window_seconds: int = Field(default=86_400, ge=1, le=604_800)
+    travelmate_max_concurrent_chats: int = Field(default=2, ge=1, le=1_000)
 
 
 def load_settings() -> Settings:

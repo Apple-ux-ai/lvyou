@@ -107,6 +107,7 @@ class SentenceTransformerEmbedding:
         device: str = "cpu",
         batch_size: int = 32,
         version: str | None = None,
+        lora_path: str | None = None,
     ):
         try:
             from sentence_transformers import SentenceTransformer
@@ -117,6 +118,22 @@ class SentenceTransformerEmbedding:
 
         try:
             self._model = SentenceTransformer(model_name, device=device)
+
+            # 如果提供了 LoRA 权重路径，加载 LoRA 适配器
+            if lora_path:
+                try:
+                    from peft import PeftModel
+                    logger.info(f"Loading LoRA adapter from {lora_path}")
+                    self._model[0].auto_model = PeftModel.from_pretrained(
+                        self._model[0].auto_model,
+                        lora_path
+                    )
+                    logger.info("✅ LoRA adapter loaded successfully")
+                except ImportError:
+                    logger.warning("peft library not installed; LoRA adapter will not be loaded")
+                except Exception as exc:
+                    logger.warning(f"Failed to load LoRA adapter: {exc}")
+
         except Exception as exc:
             raise EmbeddingUnavailableError(f"embedding model could not be loaded: {model_name}") from exc
 
@@ -124,6 +141,7 @@ class SentenceTransformerEmbedding:
         self.version = version or model_name
         self.dimension = int(self._model.get_sentence_embedding_dimension())
         self.batch_size = batch_size
+        self.lora_path = lora_path
 
     def __call__(self, texts: Sequence[str]) -> list[list[float]]:
         if not texts:
@@ -151,19 +169,23 @@ def build_embedding_fn(settings: Settings | None = None) -> EmbeddingProvider:
         return HashEmbedding(configured.travelmate_embedding_dimension, "hash-ngram-v2")
 
     if configured.travelmate_embedding_provider == "sentence_transformers":
+        lora_path = configured.travelmate_embedding_lora_path or None
         return SentenceTransformerEmbedding(
             configured.travelmate_embedding_model,
             configured.travelmate_embedding_device,
             configured.travelmate_embedding_batch_size,
             configured.travelmate_embedding_version,
+            lora_path,
         )
 
     try:
+        lora_path = configured.travelmate_embedding_lora_path or None
         return SentenceTransformerEmbedding(
             configured.travelmate_embedding_model,
             configured.travelmate_embedding_device,
             configured.travelmate_embedding_batch_size,
             configured.travelmate_embedding_version,
+            lora_path,
         )
     except EmbeddingUnavailableError as exc:
         if not configured.travelmate_embedding_allow_fallback:

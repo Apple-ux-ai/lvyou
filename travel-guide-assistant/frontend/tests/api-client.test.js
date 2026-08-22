@@ -117,6 +117,53 @@ describe("TravelMate API client", () => {
     });
   });
 
+  test("forwards the abort signal and invokes onAbort when cancelled", async () => {
+    const controller = new AbortController();
+    let forwardedSignal = null;
+    const api = loadApi((url, options) => {
+      forwardedSignal = options.signal;
+      return new Promise((resolve, reject) => {
+        controller.signal.addEventListener("abort", () => {
+          const err = new Error("The user aborted a request.");
+          err.name = "AbortError";
+          reject(err);
+        });
+      });
+    });
+    const onAbort = vi.fn();
+    const onError = vi.fn();
+
+    api.chatStream("取消这次回答", { onAbort, onError, signal: controller.signal });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    controller.abort();
+
+    await vi.waitFor(() => expect(onAbort).toHaveBeenCalledTimes(1));
+    expect(forwardedSignal).toBe(controller.signal);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  test("surfaces a friendly error when the chat endpoint is rate limited", async () => {
+    const api = loadApi(() => Promise.resolve({
+      ok: false,
+      status: 429,
+      json: () => Promise.resolve({
+        code: "rate_limited",
+        message: "请求太频繁，请稍后再试。",
+        retry_after: 42
+      })
+    }));
+    const onError = vi.fn();
+
+    await api.chatStream("再来一次", { onError });
+    await vi.waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+
+    expect(onError).toHaveBeenCalledWith({
+      code: "rate_limited",
+      message: "请求太频繁，请稍后再试。",
+      retry_after: 42
+    });
+  });
+
   test("posts an itinerary and returns the saved trip", async () => {
     const itinerary = {
       destination: "京都",

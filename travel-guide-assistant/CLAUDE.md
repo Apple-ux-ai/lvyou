@@ -28,6 +28,8 @@ python -m pytest tests/unit/test_rag_pipeline.py::test_name -k pattern
 uvicorn app.main:app --reload                 # serve API on localhost:8000
 python scripts/ingest.py --dry-run            # preview knowledge ingestion
 python scripts/ingest.py --reset              # wipe + re-ingest knowledge base
+python scripts/evaluate_retrieval.py          # run retrieval quality metrics
+python scripts/verify_backup.py --backup-path backups/<timestamp>  # validate backup integrity
 ```
 
 Frontend commands run from `travel-guide-assistant/`:
@@ -43,13 +45,13 @@ Start/stop/backup scripts at the repo root: `start-travelmate.cmd`, `stop-travel
 
 ## Backend Architecture
 
-**API surface** (`app/main.py`): `/api/health`, CRUD under `/api/trips` (persisted to SQLite via `TripStore` in `app/services/trips.py`), and `POST /api/chat` which returns an SSE stream (`sse-starlette`). The SSE contract has four events — `message` (text chunk + citations), `itinerary` (structured `Itinerary` + citations), `done` (id + usage), `error` (code + message). `frontend/tests/assistant-contract.test.js` and `backend/tests/contract/test_sse_contract.py` pin these shapes; update both when the contract changes.
+**API surface** (`app/main.py`): `/api/health` (includes index health + embedding compatibility check), CRUD under `/api/trips` (persisted to SQLite via `TripStore` in `app/services/trips.py`), and `POST /api/chat` which returns an SSE stream (`sse-starlette`). The SSE contract has four events — `message` (text chunk + citations), `itinerary` (structured `Itinerary` + citations), `done` (id + session_id + usage + metrics), `error` (code + message). `frontend/tests/assistant-contract.test.js` and `backend/tests/contract/test_sse_contract.py` pin these shapes; update both when the contract changes.
 
-**Chat flow** (`app/services/rag_chat.py`): `RAGChatService.respond()` retrieves context, detects itinerary intent, builds a prompt (system instruction + retrieved sources + capped history, `MAX_TURNS=3`), calls the LLM, and falls back to a deterministic local LLM on transport failure. `ConversationStore` keeps a 24-hour in-memory session window. Itinerary intent is detected by keyword heuristics in `app/rag/pipeline.py` (`is_plan_intent`, `detect_destination`, `detect_days`).
+**Chat flow** (`app/services/rag_chat.py`): `RAGChatService.respond()` retrieves context, detects itinerary intent, builds a prompt (system instruction + retrieved sources + capped history, `MAX_TURNS=3`, `MAX_TEXT_CHARS=8000`), calls the LLM, and falls back to a deterministic local LLM on transport failure. `ConversationStore` keeps a 24-hour in-memory session window (`SESSION_TTL`). Itinerary intent is detected by keyword heuristics in `app/rag/pipeline.py` (`is_plan_intent`, `detect_destination`, `detect_days`). The service has both `respond()` (non-streaming) and `stream()` (streaming) methods; main.py adapts both to the SSE contract.
 
-**LLM selection**: `build_default_llm()` in `rag_chat.py` picks `DeterministicLocalLLM` when `TRAVELMATE_LLM_PROVIDER=local` (or no key), else `DeepSeekLLMAdapter` when `DEEPSEEK_API_KEY` is set in `backend/.env`. The key lives only in gitignored `backend/.env`; `.env.example` documents the fields. Playwright e2e forces `TRAVELMATE_LLM_PROVIDER=local` for deterministic runs.
+**LLM selection**: `build_default_llm()` in `rag_chat.py` picks `DeterministicLocalLLM` when `TRAVELMATE_LLM_PROVIDER=local` (or no key), else `DeepSeekLLMAdapter` when `DEEPSEEK_API_KEY` is set in `backend/.env`. The key lives only in gitignored `backend/.env`; `.env.example` documents the fields. Playwright e2e forces `TRAVELMATE_LLM_PROVIDER=local` for deterministic runs. The DeepSeek adapter supports both streaming (`stream()`) and non-streaming (`complete()`) modes, with automatic `response_format: json_object` when itinerary intent is detected.
 
-**Vector store** (`app/rag/chroma_store.py`): critical gotcha — `USE_CHROMA = os.name != "nt" or os.getenv("TRAVELMATE_VECTOR_BACKEND") == "chroma"`. On Windows, Chroma's HNSW native library is skipped by default and a JSON-file fallback store (`_JsonVectorStore`) is used instead; set `TRAVELMATE_VECTOR_BACKEND=chroma` to force real Chroma anywhere. Both backends share the `ChromaIndexer`/`ChromaRetriever` API. Embeddings come from `HashEmbedding` (character n-gram hashing, offline, zero model download); `build_embedding_fn()` is the swap point for a stronger model. `ingest()` is idempotent per `(source_id, version)` and splits documents line-by-line (each non-blank line is one chunk). Citation scores are thresholded differently per caller: `rag_chat.MIN_SCORE = 0.3`, `pipeline.mock_citations` uses `0.01`.
+**Vector store** (`app/rag/chroma_store.py`): critical gotcha — `USE_CHROMA = os.name != "nt" or os.getenv("TRAVELMATE_VECTOR_BACKEND") == "chroma"`. On Windows, Chroma's HNSW native library is skipped by default and a JSON-file fallback store (`_JsonVectorStore`) is used instead; set `TRAVELMATE_VECTOR_BACKEND=chroma` to force real Chroma anywhere. Both backends share the `ChromaIndexer`/`ChromaRetriever` API. Embeddings come from `HashEmbedding` (character n-gram hashing, offline, zero model download) when `TRAVELMATE_EMBEDDING_PROVIDER=hash`, or `sentence_transformers` (BAAI/bge-small-zh-v1.5) when explicitly configured; `build_embedding_fn()` is the swap point. `ingest()` is idempotent per `(source_id, version)` and splits documents line-by-line (each non-blank line is one chunk). Citation scores are thresholded differently per caller: `rag_chat.MIN_SCORE = 0.3`, `pipeline.mock_citations` uses `0.01`. The retriever supports hybrid search with configurable dense/lexical weights (defaults: 55%/45%).
 
 **Pydantic models** (`app/models/schemas.py`): `DayPlan`, `Itinerary`, `Trip` (Itinerary + id/timestamps), `Citation`, `ChatRequest`, and SSE event models. LLM JSON output is validated into `Itinerary` by `parse_llm_output()` in `app/rag/llm_output.py`, which degrades bad JSON to plain text (`error_code="invalid_json"`) rather than throwing.
 
@@ -61,14 +63,16 @@ Many frontend tests are contract tests that read page HTML as text and assert on
 
 ## Tests & Conventions
 
-- **Backend**: pytest configured by `backend/pytest.ini` (`asyncio_mode = auto`, testpaths `tests`); `backend/conftest.py` puts the backend root on `sys.path`. Group: unit / integration / contract (SSE shape). Add a regression test for behavior changes.
-- **Frontend**: Vitest (jsdom) for unit/contract, Playwright (`frontend/e2e/`, channel=chrome) for full-stack flows against both servers.
+- **Backend**: pytest configured by `backend/pytest.ini` (`asyncio_mode = auto`, testpaths `tests`, pythonpath `.`); `backend/conftest.py` puts the backend root on `sys.path`. Group: unit / integration / contract (SSE shape). Add a regression test for behavior changes.
+- **Frontend**: Vitest (jsdom) for unit/contract, Playwright (`frontend/e2e/`, channel=chrome) for full-stack flows against both servers. Playwright auto-starts frontend (5501) + backend (8000) with `TRAVELMATE_LLM_PROVIDER=local`.
 - **Style**: Python — 4 spaces, `snake_case` functions/modules/vars, `PascalCase` Pydantic models. JS — 2 spaces, semicolons, `camelCase`, IIFE pattern. Knowledge filenames lowercase kebab-case. No formatter or linter is configured; keep diffs focused and match nearby code.
 - **Commits**: Conventional Commit style used in history, e.g. `feat(rag): ...`, `fix(frontend): ...` (messages are bilingual Chinese/English in history).
-- Never commit API keys, `backend/.env`, `.venv`, vector-store artifacts (`backend/chroma_data*`), or SQLite databases — all gitignored.
+- Never commit API keys, `backend/.env`, `.venv`, vector-store artifacts (`backend/chroma_data*`, `index_versions/`), or SQLite databases — all gitignored.
 
 ## Data & Operations
 
 - Knowledge ingestion: `python scripts/ingest.py` (from `backend/`) indexes `backend/data/knowledge/*.md|*.json` into the vector store. Re-run `--reset` after editing knowledge files to refresh.
-- Backups (`scripts/local_data.py`, `.cmd` wrappers) snapshot `trips.db` + `chroma_data/` with a manifest. Browser nickname/avatar/preferences live in localStorage and are **not** part of backups.
+- Embedding model upgrade: Use `backend/scripts/build_bge_index.ps1` to build a versioned BGE index with pre-deployment validation (runs retrieval tests before activating). Configure via `TRAVELMATE_INDEX_ROOT` + `TRAVELMATE_INDEX_VERSION` in `backend/.env`; the script manages `index_versions/active.json` to point to the validated version.
+- Index health: Check `/api/health` for `embedding_compatible` (current runtime vs persisted index) and `manifest.compatible` (schema compatibility). The startup validator logs warnings when a rebuild is needed.
+- Backups (`scripts/local_data.py`, `.cmd` wrappers) snapshot `trips.db` + `chroma_data/` (or versioned indexes when using `TRAVELMATE_INDEX_ROOT`) with a manifest. Browser nickname/avatar/preferences live in localStorage and are **not** part of backups.
 - `.local/` holds runtime logs and pre-restore snapshots; `backups/` holds timestamped backups; both gitignored.

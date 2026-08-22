@@ -33,3 +33,20 @@ test("assistant safely renders streamed plain text and shows a preview loading s
   expect(assistantSource).not.toContain('className="bubble bot streaming"');
   expect(assistantSource).not.toContain("dangerouslySetInnerHTML");
 });
+
+test("assistant can cancel an in-flight reply and start a new conversation", () => {
+  expect(assistantSource).toContain("new AbortController()");
+  expect(assistantSource).toContain("signal: abortRef.current.signal");
+  expect(assistantSource).toContain("onAbort");
+  expect(assistantSource).toContain("（已停止生成）");
+  expect(assistantSource).toContain("停止生成");
+  expect(assistantSource).toContain("新建对话");
+  expect(assistantSource).toContain('className="stop-btn"');
+  expect(assistantSource).toContain("createChatSessionId()");
+});
+
+test("assistant shows a specific message when the public demo is rate limited", () => {
+  expect(assistantSource).toContain('payload.code === "rate_limited"');
+  expect(assistantSource).toContain("payload.retry_after");
+  expect(assistantSource).toContain("请求太频繁");
+});
