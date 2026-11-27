@@ -87,6 +87,8 @@ TRAVELMATE_INDEX_VERSION=
 
 ### 开发检查
 
+运行浏览器端到端测试前，请先停止日常运行的 TravelMate（若由启动器启动，双击 `stop-travelmate.cmd`）。测试不会复用现有服务；如果端口 5501 或 8000 已占用，会先退出，而不会往日常行程库写入测试数据。
+
 ```text
 npm ci
 npm test

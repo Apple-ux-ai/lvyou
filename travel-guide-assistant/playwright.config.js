@@ -19,11 +19,12 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: process.env.TRAVELMATE_TEST_SCREENSHOTS ? "on" : "only-on-failure"
   },
+  // Never point browser tests at an already running personal instance.
   webServer: [
     {
       command: "python -m http.server 5501 --bind 127.0.0.1",
       url: "http://127.0.0.1:5501/pages/home.html",
-      reuseExistingServer: true,
+      reuseExistingServer: false,
       timeout: 120_000
     },
     {
@@ -31,7 +32,7 @@ export default defineConfig({
       cwd: "backend",
       env: { TRAVELMATE_LLM_PROVIDER: "local", TRAVELMATE_EMBEDDING_PROVIDER: "hash", TRAVELMATE_VECTOR_BACKEND: "json", TRAVELMATE_DB_PATH: ":memory:" },
       url: "http://127.0.0.1:8000/api/health",
-      reuseExistingServer: true,
+      reuseExistingServer: false,
       timeout: 120_000
     }
   ]
