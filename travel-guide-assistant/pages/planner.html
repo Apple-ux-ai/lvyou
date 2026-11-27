@@ -288,13 +288,17 @@
       ticket_budget_exceeded: "已知门票小计超过门票预算。"
     };
 
-    function TripReview({ trip, onChange }) {
-      const [review, setReview] = useState(null);
+    function ReviewSummary({ result }) {
+      return <p>已知成人门票小计：{result.known_ticket_total_jpy == null ? "未计算" : result.known_ticket_total_jpy.toLocaleString() + " 日元"}；{result.unchecked_ticket_stops} 项门票或活动费用未核实。此小计不含交通及其他花费。</p>;
+    }
+
+    function StopCheck({ stop, showMap = false }) {
+      return <>{stop.status === "within_published_hours" ? "在公布时段内" : stop.status === "conflict" ? "与公布时段冲突" : "待核实"} {stop.opens && <span className="stop-facts">公布开放 {stop.opens}–{stop.closes}{stop.last_admission && " · 最晚入场 " + stop.last_admission} · 成人 {stop.adult_ticket_jpy.toLocaleString()} 日元/人　</span>} {stop.source_url && <a href={stop.source_url} target="_blank" rel="noreferrer">官方资料（{stop.verified_on}）</a>} {showMap && stop.map_url && <a href={stop.map_url} target="_blank" rel="noreferrer">地图</a>}</>;
+    }
+
+    function TripReview({ trip, onChange, payload, reviewKey, current, stale, setReview }) {
       const [pending, setPending] = useState(false);
       const [error, setError] = useState("");
-      const payload = window.TravelMate.planner.toApi(trip);
-      const key = JSON.stringify(payload);
-      const current = review && review.key === key ? review.data : null;
       const run = (event) => {
         event.preventDefault();
         if (trip.dayPlans.some((day) => day.items.some((item) => !item.text.trim()))) {
@@ -303,7 +307,7 @@
         }
         setPending(true); setError(""); setReview(null);
         window.TravelMate.api.checkTrip(payload, (data) => {
-          setReview({ key, data }); setPending(false);
+          setReview({ key: reviewKey, data }); setPending(false);
         }, () => {
           setError("暂时无法核验。请确认本地后端已启动，再试一次。"); setPending(false);
         });
@@ -320,23 +324,43 @@
           <button className="add-btn" type="button" onClick={() => window.print()}>打印全部行程 / 存 PDF</button>
         </form>
         {error && <p role="alert">{error}</p>}
-        {review && !current && <p role="status">行程已改动，请重新检查。</p>}
+        {stale && <p role="status">行程已改动，请重新检查。</p>}
         {current && <div role="status" className="review-results">
-          <p>已知成人门票小计：{current.known_ticket_total_jpy == null ? "未计算" : current.known_ticket_total_jpy.toLocaleString() + " 日元"}；{current.unchecked_ticket_stops} 项门票或活动费用未核实。此小计不含交通及其他花费。</p>
+          <ReviewSummary result={current} />
           {current.issues.length > 0 && <ul>{current.issues.map((issue, i) => <li key={i}>{issue.day ? "第 " + issue.day + " 天 · " + issue.name + "：" : ""}{REVIEW_ISSUES[issue.code]}</li>)}</ul>}
-          <ul>{current.stops.map((stop, i) => <li key={i}>第 {stop.day} 天{stop.date && "（" + stop.date + "）"} · {stop.name}：{stop.status === "within_published_hours" ? "在公布时段内" : stop.status === "conflict" ? "与公布时段冲突" : "待核实"} {stop.opens && <span className="stop-facts">公布开放 {stop.opens}–{stop.closes}{stop.last_admission && " · 最晚入场 " + stop.last_admission} · 成人 {stop.adult_ticket_jpy.toLocaleString()} 日元/人　</span>} {stop.source_url && <a href={stop.source_url} target="_blank" rel="noreferrer">官方资料（{stop.verified_on}）</a>} {stop.map_url && <a href={stop.map_url} target="_blank" rel="noreferrer">地图</a>}</li>)}</ul>
+          <ul>{current.stops.map((stop, i) => <li key={i}>第 {stop.day} 天{stop.date && "（" + stop.date + "）"} · {stop.name}：<StopCheck stop={stop} showMap /></li>)}</ul>
         </div>}
       </section>;
     }
 
-    function PrintableTrip({ trip }) {
+    function PrintableTrip({ trip, current, stale }) {
+      const stops = new Map(current?.stops.map((stop) => [stop.day + ":" + stop.index, stop]));
+      const stopIssues = new Map();
+      for (const issue of current?.issues || []) {
+        if (issue.index == null) continue;
+        const key = issue.day + ":" + issue.index;
+        const messages = stopIssues.get(key) || [];
+        messages.push(REVIEW_ISSUES[issue.code]);
+        stopIssues.set(key, messages);
+      }
       return <div className="print-trip">
         <h1>{trip.title}</h1>
         <p>{trip.startDate ? "出发日期：" + trip.startDate : "出发日期未定"}{trip.isSample && " · 示例行程"}</p>
+        {current ? <>
+          <ReviewSummary result={current} />
+          {current.issues.filter((issue) => issue.index == null).map((issue) => <p key={issue.code}>{REVIEW_ISSUES[issue.code]}</p>)}
+        </> : <p>{stale ? "行程已修改，待重新核验。" : "此版本尚未核验。"}</p>}
         {trip.dayPlans.map((day) => <section key={day.day}>
           <h2>第 {day.day} 天 · {day.title}</h2>
           {day.transport && <p>交通：{day.transport}</p>}
-          <ol>{day.items.map((item) => <li key={item.id}>{item.time || "时间待定"} · {item.text}</li>)}</ol>
+          <ol>{day.items.map((item, index) => {
+            const key = day.day + ":" + index;
+            const stop = stops.get(key);
+            return <li key={item.id} className="print-stop">
+              <span>{item.time || "时间待定"} · {item.text}</span>
+              {stop && <div className="print-stop-check"><StopCheck stop={stop} />{stopIssues.get(key)?.map((message) => <div key={message}><strong>{message}</strong></div>)}</div>}
+            </li>;
+          })}</ol>
         </section>)}
         <p>开放、票价与交通可能变化，请出发前核对官方信息。</p>
       </div>;
@@ -351,6 +375,11 @@
       const [saving, setSaving] = useState(false);
       const [loadError, setLoadError] = useState("");
       const [saveError, setSaveError] = useState("");
+      const [review, setReview] = useState(null);
+      const payload = window.TravelMate.planner.toApi(trip);
+      const reviewKey = JSON.stringify(payload);
+      const current = review?.key === reviewKey ? review.data : null;
+      const stale = Boolean(review && !current);
 
       useEffect(() => {
         window.TravelMate.utils.initTheme();
@@ -455,8 +484,9 @@
           <Topbar onSave={handleSave} saving={saving} />
           {saveError && <div className="page-state error" role="alert">{saveError}<button className="ghost-btn" onClick={() => setSaveError("")}>知道了</button></div>}
           <PlannerHeader trip={trip} total={total} />
-          <TripReview trip={trip} onChange={(patch) => setTrip((prev) => ({ ...prev, ...patch }))} />
-          <PrintableTrip trip={trip} />
+          <TripReview trip={trip} onChange={(patch) => setTrip((prev) => ({ ...prev, ...patch }))}
+            payload={payload} reviewKey={reviewKey} current={current} stale={stale} setReview={setReview} />
+          <PrintableTrip trip={trip} current={current} stale={stale} />
           <DayTabs trip={trip} activeDay={activeDay} onSelect={setActiveDay} />
           <div className="planner-layout">
             <main className="planner-main">
@@ -607,9 +637,11 @@
     .print-trip{display:none}
     @media(max-width:620px){.activity-item{flex-wrap:wrap}.activity-main{min-width:9rem}.review-panel{margin:.75rem}}
     @media print{
+      @page{margin:14mm}
       .app > :not(.print-trip){display:none!important}
       .print-trip{display:block;color:#000;background:#fff}
       .print-trip li{break-inside:avoid}
+      .print-stop-check{font-size:10pt;line-height:1.55;margin-bottom:0.4em}
       html,body,.app{background:#fff!important;color:#000!important;overflow:visible!important}
     }
   </style>
