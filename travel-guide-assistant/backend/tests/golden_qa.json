@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "description": "TravelMate 检索质量黄金问答对（RAG 回归基准）",
+  "pairs": [
+    {
+      "id": "qa-001",
+      "question": "五一去日本关西玩 7 天，预算 1 万左右，有什么推荐？",
+      "expected_sources": ["kansai-7day-family", "japan-kansai", "kansai-7d"],
+      "expected_answer_contains": ["关西", "京都"]
+    },
+    {
+      "id": "qa-002",
+      "question": "申请日本旅游签证需要准备什么材料？",
+      "expected_sources": ["japan-visa"],
+      "expected_answer_contains": ["护照", "在职证明"]
+    },
+    {
+      "id": "qa-003",
+      "question": "冰岛冬季自驾追极光安全吗？需要注意什么？",
+      "expected_sources": ["iceland-aurora-8day", "iceland"],
+      "expected_answer_contains": ["四驱车", "路况"]
+    },
+    {
+      "id": "qa-004",
+      "question": "京都必去的景点有哪些？",
+      "expected_sources": ["kansai-iceland-pois", "kansai-7day-family", "japan-kansai"],
+      "expected_answer_contains": ["伏见稻荷", "岚山", "金阁寺"]
+    },
+    {
+      "id": "qa-005",
+      "question": "大理玩几天合适？预算大概多少？",
+      "expected_sources": ["dali-4day-slow"],
+      "expected_answer_contains": ["4 天", "洱海", "苍山"]
+    },
+    {
+      "id": "qa-006",
+      "question": "去冰岛追极光要准备多少钱？",
+      "expected_sources": ["iceland-aurora-8day", "iceland"],
+      "expected_answer_contains": ["20000", "租车"]
+    },
+    {
+      "id": "qa-007",
+      "question": "关西有哪些值得吃的美食？",
+      "expected_sources": ["kansai-7day-family", "kansai-iceland-pois"],
+      "expected_answer_contains": ["章鱼烧", "大阪烧", "神户牛肉"]
+    },
+    {
+      "id": "qa-008",
+      "question": "奈良公园可以喂鹿吗？",
+      "expected_sources": ["kansai-7day-family", "kansai-iceland-pois"],
+      "expected_answer_contains": ["鹿仙贝"]
+    },
+    {
+      "id": "qa-009",
+      "question": "日本关西什么时候去最适合看樱花或红叶？",
+      "expected_sources": ["japan-kansai"],
+      "expected_answer_contains": ["樱花", "红叶"]
+    },
+    {
+      "id": "qa-010",
+      "question": "从关西机场到京都怎么走，大约需要多久？",
+      "expected_sources": ["kansai-7d", "japan-kansai"],
+      "expected_answer_contains": ["Haruka", "80 分钟"]
+    },
+    {
+      "id": "qa-011",
+      "question": "京都市内主要靠什么交通？有没有一日券？",
+      "expected_sources": ["japan-kansai"],
+      "expected_answer_contains": ["巴士", "地铁", "700 日元"]
+    },
+    {
+      "id": "qa-012",
+      "question": "冰岛冬季自驾出发前应该检查哪些安全事项？",
+      "expected_sources": ["iceland-aurora-8day", "iceland"],
+      "expected_answer_contains": ["四驱车", "防滑链", "road.is"]
+    },
+    {
+      "id": "qa-013",
+      "question": "去冰岛旅游需要办理哪种签证，保险有什么要求？",
+      "expected_sources": ["iceland"],
+      "expected_answer_contains": ["申根签证", "保险"]
+    },
+    {
+      "id": "qa-014",
+      "question": "大理环洱海租电动车大概多少钱？",
+      "expected_sources": ["dali-4day-slow"],
+      "expected_answer_contains": ["60-100", "洱海"]
+    },
+    {
+      "id": "qa-015",
+      "question": "大理古城住宿和淡季价格有什么建议？",
+      "expected_sources": ["dali-4day-slow"],
+      "expected_answer_contains": ["古城", "150-300"]
+    },
+    {
+      "id": "qa-016",
+      "question": "日本签证通常由谁递交，审核要多久？",
+      "expected_sources": ["japan-visa"],
+      "expected_answer_contains": ["旅行社", "3-5 个工作日"]
+    },
+    {
+      "id": "qa-017",
+      "question": "曼谷什么时候去天气比较舒服？",
+      "expected_sources": ["thailand-bangkok"],
+      "expected_answer_contains": ["11 月-次年 2 月", "凉爽"]
+    },
+    {
+      "id": "qa-018",
+      "question": "第一次去曼谷 4 天，寺庙和美食怎么安排？",
+      "expected_sources": ["bangkok-4day-city-food", "thailand-bangkok"],
+      "expected_answer_contains": ["大皇宫", "郑王庙", "冬阴功"]
+    },
+    {
+      "id": "qa-019",
+      "question": "曼谷市内出行应该选什么交通方式？",
+      "expected_sources": ["thailand-bangkok", "bangkok-4day-city-food"],
+      "expected_answer_contains": ["BTS", "MRT"]
+    },
+    {
+      "id": "qa-020",
+      "question": "曼谷晚上去哪里逛街吃东西比较合适？",
+      "expected_sources": ["bangkok-4day-city-food"],
+      "expected_answer_contains": ["唐人街", "芒果糯米饭"]
+    }
+  ]
+}

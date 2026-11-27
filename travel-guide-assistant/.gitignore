@@ -1,0 +1,36 @@
+# JavaScript dependencies and test output
+node_modules/
+coverage/
+playwright-report/
+test-results/
+.local/
+backups/
+
+# Python environments, caches, and local logs
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/**/*.pyc
+backend/*.log
+backend/tests/**/.trip-store-tests/
+
+# Generated local vector-store data
+backend/chroma_data/
+backend/chroma_data.*/
+
+# Local databases and environment configuration
+backend/data/*.db
+backend/data/*.db-*
+.env
+.env.*
+!.env.example
+
+# Local agent previews and editor/OS metadata
+.superpowers/
+.codex/
+.agents/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

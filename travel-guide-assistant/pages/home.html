@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 智能旅游攻略助手</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    /* ── SVG Icon Components ── */
+    function SearchIcon({ size = 20 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>;
+    }
+    function BellIcon({ size = 20 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>;
+    }
+    function MapIcon({ size = 22 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>;
+    }
+    function WalletIcon({ size = 22 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>;
+    }
+    function MessageIcon({ size = 22 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>;
+    }
+    function ArrowRightIcon({ size = 16 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>;
+    }
+    function PlaneIcon({ size = 16 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>;
+    }
+    function CameraIcon({ size = 16 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
+    }
+    function ClockIcon({ size = 16 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+    }
+    function ShieldIcon({ size = 16 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>;
+    }
+    function SparkleIcon({ size = 16 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>;
+    }
+    function TrendUpIcon({ size = 14 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>;
+    }
+    function SunIcon({ size = 18 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>;
+    }
+    function MoonIcon({ size = 18 }) {
+      return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
+    }
+
+    /* ── Data ── */
+    const navItems = [
+      { id: "home", label: "首页", href: "home.html" },
+      { id: "dest", label: "目的地", href: "explore.html" },
+      { id: "guide", label: "攻略", href: "guides.html" },
+      { id: "community", label: "社区", href: "community.html" }
+    ];
+
+    const quickTags = ["日本赏樱", "东南亚海岛", "欧洲自驾", "新疆独库", "云南大理", "冰岛极光"];
+
+    const destinations = [
+      { id: "kyoto", name: "京都 · 千年古韵", tag: "热门", desc: "漫步岚山竹林，体验茶道文化，春日樱花与秋日红叶交织的古都之旅", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&h=400&fit=crop", duration: "5-7天", budget: "¥8K-12K", rating: "4.9" },
+      { id: "bali", name: "巴厘岛 · 乌布梯田", tag: "海岛", desc: "在乌布梯田间瑜伽冥想，海神庙日落，库塔冲浪的热带天堂", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=400&fit=crop", duration: "6-8天", budget: "¥5K-9K", rating: "4.8" },
+      { id: "iceland", name: "冰岛 · 极光秘境", tag: "极地", desc: "追逐北极光，探索蓝冰洞，黄金圈环线的冰与火之歌", img: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=600&h=400&fit=crop", duration: "7-10天", budget: "¥15K-25K", rating: "4.9" },
+      { id: "dali", name: "大理 · 苍山洱海", tag: "国内", desc: "洱海环湖骑行，古城白族建筑，苍山云海日出的慢生活", img: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=600&h=400&fit=crop", duration: "4-6天", budget: "¥3K-5K", rating: "4.7" }
+    ];
+
+    const tips = [
+      { num: "01", title: "行前准备清单", desc: "签证材料、保险购买、汇率换算、必备APP下载——出发前的20项关键准备，助你从容启程", icon: <ShieldIcon size={20} /> },
+      { num: "02", title: "省钱攻略", desc: "机票比价技巧、住宿平替方案、免费景点地图、当地交通省钱指南，人均预算降低40%", icon: <WalletIcon size={20} /> },
+      { num: "03", title: "安全贴士", desc: "目的地治安评估、紧急联系方式、医疗保障、常见骗局预警，让旅途安心无忧", icon: <ClockIcon size={20} /> }
+    ];
+
+    const stats = [
+      { value: "2,400+", label: "目的地攻略", sub: "覆盖全球" },
+      { value: "180K+", label: "旅行问答", sub: "实时响应" },
+      { value: "50+", label: "覆盖国家", sub: "持续扩展" },
+      { value: "98%", label: "用户满意度", sub: "好评如潮" }
+    ];
+
+    const recentGuides = [
+      { id: "g5", title: "2026东京自由行完全指南", author: "旅行达人小王", views: "12.4K", tag: "日本" },
+      { id: "g8", title: "东南亚背包客省钱手册", author: "背包客阿明", views: "8.7K", tag: "东南亚" },
+      { id: "g2", title: "冰岛自驾环岛路线规划", author: "极光猎人", views: "6.2K", tag: "欧洲" }
+    ];
+
+    /* ── Components ── */
+    function Topbar() {
+      const [mobileOpen, setMobileOpen] = useState(false);
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+
+      const toggleTheme = () => {
+        const next = window.TravelMate.utils.toggleTheme();
+        setThemeState(next);
+      };
+
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <nav className="nav-links">
+              {navItems.map((item) => (
+                <a key={item.id} className={`nav-link ${item.id === "home" ? "active" : ""}`} href={item.href}>{item.label}</a>
+              ))}
+            </nav>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="搜索"><SearchIcon size={18} /></button>
+            <button className="icon-btn" title="通知" style={{ position: "relative" }}>
+              <BellIcon size={18} />
+              <span style={{ position: "absolute", top: 6, right: 6, width: 7, height: 7, borderRadius: "50%", background: "var(--chart-2)", border: "1.5px solid var(--card)" }}></span>
+            </button>
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <button className="icon-btn mobile-menu-btn" title="菜单" onClick={() => setMobileOpen(!mobileOpen)} aria-label="打开菜单">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+            </button>
+            <a className="avatar-link" href="profile.html" aria-label="个人中心"><div className="avatar">旅</div></a>
+          </div>
+          {mobileOpen && (
+            <nav className="mobile-nav">
+              {navItems.map((item) => (
+                <a key={item.id} className={`mobile-nav-link ${item.id === "home" ? "active" : ""}`} href={item.href} onClick={() => setMobileOpen(false)}>{item.label}</a>
+              ))}
+            </nav>
+          )}
+        </header>
+      );
+    }
+
+    function HeroSection() {
+      const [query, setQuery] = useState("");
+      const handlePlan = () => {
+        window.TravelMate.utils.go("assistant.html", { query: query });
+      };
+      return (
+        <section className="hero-section">
+          <span className="hero-badge"><span className="dot"></span>AI 智能驱动</span>
+          <h1 className="hero-title">
+            让每一次旅行都有<span className="accent">完美攻略</span>
+          </h1>
+          <p className="hero-subtitle">
+            输入你的旅行想法，AI 助手将为你量身定制行程、预算、美食与住宿推荐
+          </p>
+          <div className="search-bar">
+            <span className="search-icon"><SearchIcon size={20} /></span>
+            <input
+              placeholder="试试输入：五一去日本7天，预算1万，有什么推荐？"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handlePlan(); }}
+            />
+            <button className="search-btn" onClick={handlePlan}>开始规划</button>
+          </div>
+          <div className="quick-tags">
+            {quickTags.map((tag) => (
+              <button key={tag} className="tag" onClick={() => { setQuery(tag); window.TravelMate.utils.go("assistant.html", { query: tag }); }}>{tag}</button>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function DestCard({ item }) {
+      const handleClick = () => {
+        window.TravelMate.utils.go("destination.html", { id: item.id });
+      };
+      return (
+        <article className="dest-card" tabIndex="0" onClick={handleClick} role="link" aria-label={`查看 ${item.name}`}>
+          <img className="dest-img" src={item.img} alt={item.name} loading="lazy" />
+          <div className="dest-body">
+            <span className="dest-tag">✦ {item.tag}</span>
+            <div className="dest-name">{item.name}</div>
+            <div className="dest-desc">{item.desc}</div>
+            <div className="dest-meta">
+              <span>◷ {item.duration}</span>
+              <span>¥ {item.budget}</span>
+              <span style={{ color: "var(--chart-3)" }}>★ {item.rating}</span>
+            </div>
+          </div>
+        </article>
+      );
+    }
+
+    function DestinationsSection() {
+      return (
+        <section>
+          <div className="section-header">
+            <h2>热门目的地</h2>
+            <a className="view-all" href="explore.html">查看全部 <ArrowRightIcon size={14} /></a>
+          </div>
+          <div className="dest-grid">
+            {destinations.map((item) => <DestCard key={item.id} item={item} />)}
+          </div>
+        </section>
+      );
+    }
+
+    function ChatPreview() {
+      return (
+        <section className="chat-section">
+          <div className="chat-left">
+            <h2>AI 旅行助手</h2>
+            <p>像和朋友聊天一样描述你的旅行想法，AI 将实时为你生成个性化行程、预算方案和实用贴士。</p>
+            <div className="chat-features">
+              <div className="chat-feature">
+                <div className="feature-icon blue"><MapIcon size={22} /></div>
+                <div>
+                  <div className="feature-title">智能行程规划</div>
+                  <div className="feature-desc">根据天数、预算、兴趣自动编排最优路线，支持实时调整</div>
+                </div>
+              </div>
+              <div className="chat-feature">
+                <div className="feature-icon green"><WalletIcon size={22} /></div>
+                <div>
+                  <div className="feature-title">预算精算</div>
+                  <div className="feature-desc">机票、住宿、餐饮、门票分项预估，帮你把钱花在刀刃上</div>
+                </div>
+              </div>
+              <div className="chat-feature">
+                <div className="feature-icon yellow"><MessageIcon size={22} /></div>
+                <div>
+                  <div className="feature-title">实时问答</div>
+                  <div className="feature-desc">签证、天气、小众景点、避坑指南，任何旅行问题随时解答</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <a className="chat-window chat-launcher" href="assistant.html" aria-label="打开 AI 旅行助手">
+            <div className="chat-header">
+              <span className="chat-header-dot"></span>
+              <span className="chat-header-title">TravelMate AI</span>
+              <span className="chat-header-status">开始规划</span>
+            </div>
+            <div className="chat-launcher-body">
+              <div className="chat-launcher-icon"><MessageIcon size={30} /></div>
+              <p className="chat-launcher-kicker">从一个想法开始</p>
+              <h3>告诉我你的下一站</h3>
+              <p className="chat-launcher-copy">输入目的地、天数或预算，生成一份可执行的旅行方案。</p>
+              <span className="chat-launcher-action">进入助手 <ArrowRightIcon size={15} /></span>
+            </div>
+          </a>
+        </section>
+      );
+    }
+
+    function RecentGuidesSection() {
+      return (
+        <section>
+          <div className="section-header">
+            <h2>近期攻略</h2>
+            <a className="view-all" href="guides.html">更多攻略 <ArrowRightIcon size={14} /></a>
+          </div>
+          <div className="guides-list">
+            {recentGuides.map((g) => (
+              <div
+                key={g.id}
+                className="guide-item"
+                onClick={() => window.TravelMate.utils.go("guide-detail.html", { id: g.id })}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") window.TravelMate.utils.go("guide-detail.html", { id: g.id }); }}
+                role="link"
+                tabIndex="0"
+              >
+                <div className="guide-info">
+                  <span className="guide-tag">{g.tag}</span>
+                  <div className="guide-title">{g.title}</div>
+                  <div className="guide-meta">{g.author} · {g.views} 次阅读</div>
+                </div>
+                <div className="guide-action">
+                  <span className="guide-read-btn">阅读 <ArrowRightIcon size={12} /></span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function TipsSection() {
+      return (
+        <section>
+          <div className="section-header">
+            <h2>旅行锦囊</h2>
+            <a className="view-all" href="guides.html">更多攻略 <ArrowRightIcon size={14} /></a>
+          </div>
+          <div className="tips-grid">
+            {tips.map((tip) => (
+              <div key={tip.num} className="tip-card">
+                <div className="tip-icon-wrap">{tip.icon}</div>
+                <div className="tip-number">{tip.num}</div>
+                <div className="tip-title">{tip.title}</div>
+                <div className="tip-desc">{tip.desc}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function StatsBar() {
+      return (
+        <div className="stats-bar">
+          {stats.map((s) => (
+            <div key={s.label} className="stat-item">
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+              <div className="stat-sub">{s.sub}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    function Footer() {
+      return (
+        <footer className="footer">
+          <div className="footer-grid">
+            <div className="footer-brand">
+              <span className="brand-text">TravelMate</span>
+              <p>智能旅游攻略助手，让每一次旅行都有完美计划。AI 驱动的行程规划、预算管理和实时问答。</p>
+            </div>
+            <div className="footer-col">
+              <h4>产品</h4>
+              <ul>
+                <li><a href="assistant.html">AI 行程规划</a></li>
+                <li><a href="budget.html">预算计算器</a></li>
+                <li><a href="explore.html">目的地指南</a></li>
+                <li><a href="community.html">旅行社区</a></li>
+              </ul>
+            </div>
+            <div className="footer-col">
+              <h4>资源</h4>
+              <ul>
+                <li><a href="guides.html">攻略博客</a></li>
+                <li><a href="visa.html">签证工具</a></li>
+                <li><a href="currency.html">汇率换算</a></li>
+                <li><a href="planner.html">行程编辑器</a></li>
+              </ul>
+            </div>
+            <div className="footer-col">
+              <h4>关于</h4>
+              <ul>
+                <li><a href="profile.html">个人中心</a></li>
+                <li><a href="auth.html">登录 / 注册</a></li>
+                <li><a href="compare.html">目的地对比</a></li>
+                <li><a href="home.html">返回首页</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="footer-bottom">
+            <span>© 2026 TravelMate. All rights reserved.</span>
+            <span>Powered by AI · 让旅行更简单</span>
+          </div>
+        </footer>
+      );
+    }
+
+    function ToolEntrySection() {
+      const tools = [
+        { href: "planner.html", title: "行程编辑器", desc: "把灵感整理成每天可执行的计划", icon: <PlaneIcon size={18} /> },
+        { href: "budget.html", title: "预算计算器", desc: "快速拆分交通、住宿与日常开销", icon: <WalletIcon size={18} /> },
+        { href: "visa.html", title: "签证助手", desc: "按目的地查看签证与材料清单", icon: <ShieldIcon size={18} /> },
+        { href: "currency.html", title: "汇率换算", desc: "出发前掌握当地消费尺度", icon: <TrendUpIcon size={18} /> }
+      ];
+      return (
+        <section className="tool-entry-section">
+          <div className="section-header">
+            <div><span className="section-kicker">旅行工具</span><h2>把准备工作一次完成</h2></div>
+            <a className="view-all" href="profile.html">进入个人中心 <ArrowRightIcon size={14} /></a>
+          </div>
+          <div className="tool-entry-grid">
+            {tools.map((tool) => (
+              <a key={tool.href} className="tool-entry" href={tool.href}>
+                <span className="tool-entry-icon">{tool.icon}</span>
+                <span className="tool-entry-copy"><strong>{tool.title}</strong><span>{tool.desc}</span></span>
+                <ArrowRightIcon size={14} />
+              </a>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    function App() {
+      useEffect(() => {
+        if (window.TravelMate && window.TravelMate.utils) {
+          window.TravelMate.utils.initTheme();
+        }
+      }, []);
+      return (
+        <div className="app">
+          <Topbar />
+          <HeroSection />
+          <main className="main-content">
+            <ToolEntrySection />
+            <DestinationsSection />
+            <ChatPreview />
+            <RecentGuidesSection />
+            <StatsBar />
+            <TipsSection />
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+
+    <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body,#root{height:100%}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input,select,textarea{font:inherit}
+
+    /* ── Layout Shell ── */
+    .app{display:flex;flex-direction:column;min-height:100vh;background:var(--background)}
+
+    /* ── Top Navigation ── */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700;font-size:1rem}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .nav-links{display:flex;align-items:center;gap:calc(var(--spacing)*1.5)}
+    .nav-link{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3.5);border-radius:var(--radius);background:transparent;border:none;color:var(--muted-foreground);cursor:pointer;font-size:.9rem;transition:background .2s,color .2s}
+    .nav-link:hover{background:var(--primary-soft);color:var(--primary)}
+    .nav-link.active{color:var(--foreground);font-weight:600}
+    .nav-link:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+    .mobile-nav{display:none}
+    .mobile-nav-link{display:block;padding:calc(var(--spacing)*3.5) calc(var(--spacing)*5);border-radius:var(--radius);color:var(--muted-foreground);text-decoration:none;font-size:.95rem;border:1px solid var(--border);background:var(--card);margin-bottom:calc(var(--spacing)*2)}
+    .mobile-nav-link.active{color:var(--primary);border-color:var(--ring);background:var(--primary-soft)}
+    .icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+    .mobile-menu-btn{display:none}
+    .avatar-link{display:inline-flex;border-radius:50%;color:inherit;text-decoration:none}
+    .avatar-link:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+    /* ── Hero Section ── */
+    .hero-section{padding:calc(var(--spacing)*12) calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;align-items:center;text-align:center;gap:calc(var(--spacing)*5)}
+    .hero-badge{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .85rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.8rem;font-weight:600}
+    .hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--chart-5)}
+    .hero-title{font-size:2.6rem;font-weight:700;letter-spacing:-0.025em;line-height:1.2;max-width:680px;color:var(--foreground)}
+    .hero-title .accent{color:var(--primary)}
+    .hero-subtitle{font-size:1.1rem;color:var(--muted-foreground);max-width:560px;line-height:1.6}
+
+    /* ── Search Bar ── */
+    .search-bar{width:min(680px,92vw);display:flex;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*3.5) calc(var(--spacing)*5);border:1px solid var(--input);border-radius:999px;background:var(--card);transition:border-color .2s,box-shadow .2s}
+    .search-bar:focus-within{border-color:var(--ring);box-shadow:0 0 0 3px rgba(66,133,244,.12)}
+    .search-bar input{flex:1;border:none;outline:none;background:transparent;color:var(--foreground);font-size:.95rem}
+    .search-bar input::placeholder{color:var(--muted-foreground)}
+    .search-icon{color:var(--muted-foreground);flex-shrink:0}
+    .search-btn{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*5);border-radius:999px;border:none;background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.9rem;cursor:pointer;transition:opacity .2s}
+    .search-btn:hover{opacity:.9}
+    .search-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+    /* ── Quick Tags ── */
+    .quick-tags{display:flex;gap:calc(var(--spacing)*2);flex-wrap:wrap;justify-content:center;margin-top:calc(var(--spacing)*1)}
+    .tag{padding:calc(var(--spacing)*2) calc(var(--spacing)*3.5);border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--muted-foreground);font-size:.82rem;cursor:pointer;transition:all .2s}
+    .tag:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+    .tag:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+    /* ── Main Content ── */
+    .main-content{padding:0 calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;gap:calc(var(--spacing)*8);max-width:1200px;margin:0 auto;width:100%}
+
+    /* ── Section Header ── */
+    .section-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:calc(var(--spacing)*4)}
+    .section-header h2{font-size:1.35rem;font-weight:700}
+    .section-header .view-all{display:inline-flex;align-items:center;gap:.3rem;color:var(--primary);font-size:.88rem;font-weight:600;text-decoration:none;cursor:pointer}
+    .section-header .view-all:hover{text-decoration:underline}
+    .section-header .view-all svg{flex:0 0 auto}
+
+    /* ── Tool Entry Section ── */
+    .tool-entry-section{display:flex;flex-direction:column;gap:calc(var(--spacing)*4);padding-top:calc(var(--spacing)*2)}
+    .section-kicker{display:block;margin-bottom:calc(var(--spacing)*1);color:var(--primary);font-size:.72rem;font-weight:700;letter-spacing:.08em}
+    .tool-entry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--spacing)*3)}
+    .tool-entry{display:flex;align-items:center;gap:calc(var(--spacing)*3);min-width:0;padding:calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 2px);background:var(--card);color:var(--foreground);text-decoration:none;transition:border-color .2s,background .2s}
+    .tool-entry:hover{border-color:var(--ring);background:var(--primary-soft)}
+    .tool-entry-icon{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:var(--radius);background:var(--muted);color:var(--primary)}
+    .tool-entry-copy{display:flex;flex-direction:column;gap:calc(var(--spacing)*1);min-width:0;flex:1}
+    .tool-entry-copy strong{font-size:.88rem}
+    .tool-entry-copy span{font-size:.72rem;color:var(--muted-foreground);line-height:1.45}
+    .tool-entry>svg{flex:0 0 auto;color:var(--muted-foreground)}
+
+    /* ── Destination Cards Grid ── */
+    .dest-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--spacing)*4)}
+    .dest-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s}
+    .dest-card:hover{border-color:var(--ring);transform:translateY(-2px)}
+    .dest-card:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+    .dest-img{width:100%;height:180px;object-fit:cover;display:block}
+    .dest-body{padding:calc(var(--spacing)*4) calc(var(--spacing)*4.5) calc(var(--spacing)*5)}
+    .dest-tag{display:inline-flex;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.72rem;font-weight:600;margin-bottom:calc(var(--spacing)*2)}
+    .dest-name{font-size:1.05rem;font-weight:700;margin-bottom:.25rem}
+    .dest-desc{font-size:.84rem;color:var(--muted-foreground);line-height:1.5}
+    .dest-meta{display:flex;gap:calc(var(--spacing)*4);margin-top:calc(var(--spacing)*3);padding-top:calc(var(--spacing)*3);border-top:1px solid var(--border)}
+    .dest-meta span{font-size:.78rem;color:var(--muted-foreground);display:flex;align-items:center;gap:.3rem}
+
+    /* ── AI Chat Preview Section ── */
+    .chat-section{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--spacing)*6);align-items:start}
+    .chat-left h2{font-size:1.5rem;font-weight:700;margin-bottom:calc(var(--spacing)*3)}
+    .chat-left p{color:var(--muted-foreground);margin-bottom:calc(var(--spacing)*5);line-height:1.65}
+    .chat-features{display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .chat-feature{display:flex;gap:calc(var(--spacing)*3.5);align-items:flex-start;padding:calc(var(--spacing)*4);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);transition:border-color .2s}
+    .chat-feature:hover{border-color:var(--ring)}
+    .feature-icon{width:40px;height:40px;border-radius:var(--radius);display:grid;place-items:center;flex-shrink:0;font-size:1.1rem}
+    .feature-icon.blue{background:var(--muted);color:var(--primary)}
+    .feature-icon.green{background:rgba(52,168,83,.12);color:var(--chart-5)}
+    .feature-icon.yellow{background:rgba(251,188,5,.12);color:var(--chart-3)}
+    .feature-title{font-size:.92rem;font-weight:600;margin-bottom:.15rem}
+    .feature-desc{font-size:.82rem;color:var(--muted-foreground);line-height:1.5}
+
+    /* ── AI Assistant Launcher ── */
+    .chat-window{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 8px);overflow:hidden;display:flex;flex-direction:column;height:440px;color:var(--foreground);text-decoration:none;transition:border-color .2s,transform .2s}
+    .chat-window:hover{border-color:var(--ring);transform:translateY(-2px)}
+    .chat-window:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+    .chat-header{padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:calc(var(--spacing)*3)}
+    .chat-header-dot{width:8px;height:8px;border-radius:50%;background:var(--chart-5)}
+    .chat-header-title{font-weight:600;font-size:.92rem}
+    .chat-header-status{font-size:.78rem;color:var(--muted-foreground)}
+    .chat-launcher-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:calc(var(--spacing)*8);text-align:center}
+    .chat-launcher-icon{width:64px;height:64px;display:grid;place-items:center;border-radius:50%;background:var(--primary-soft);color:var(--primary);margin-bottom:calc(var(--spacing)*5)}
+    .chat-launcher-kicker{margin:0 0 calc(var(--spacing)*2);font-size:.78rem;color:var(--muted-foreground);letter-spacing:.04em}
+    .chat-launcher-body h3{margin:0;font-size:1.35rem;line-height:1.3}
+    .chat-launcher-copy{max-width:280px;margin:calc(var(--spacing)*3) 0 calc(var(--spacing)*6);color:var(--muted-foreground);font-size:.88rem;line-height:1.6}
+    .chat-launcher-action{display:inline-flex;align-items:center;gap:calc(var(--spacing)*2);color:var(--primary);font-size:.88rem;font-weight:700}
+
+    /* ── Tips Section ── */
+    .tips-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*4)}
+    .tip-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);padding:calc(var(--spacing)*6) calc(var(--spacing)*5);transition:border-color .2s}
+    .tip-card:hover{border-color:var(--ring)}
+    .tip-icon-wrap{width:40px;height:40px;border-radius:var(--radius);display:grid;place-items:center;background:var(--muted);color:var(--primary);margin-bottom:calc(var(--spacing)*3)}
+    .tip-number{font-size:2rem;font-weight:700;color:var(--primary);opacity:.3;margin-bottom:calc(var(--spacing)*2);font-family:var(--font-mono)}
+    .tip-title{font-size:1.05rem;font-weight:700;margin-bottom:calc(var(--spacing)*2.5)}
+    .tip-desc{font-size:.88rem;color:var(--muted-foreground);line-height:1.65}
+
+    /* ── Recent Guides ── */
+    .guides-list{display:flex;flex-direction:column;gap:calc(var(--spacing)*2.5)}
+    .guide-item{display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:calc(var(--spacing)*4) calc(var(--spacing)*5);border:1px solid var(--border);border-radius:calc(var(--radius) + 4px);background:var(--card);transition:border-color .2s}
+    .guide-item:hover{border-color:var(--ring)}
+    .guide-info{display:flex;flex-direction:column;gap:calc(var(--spacing)*1);min-width:0}
+    .guide-tag{display:inline-flex;width:max-content;padding:.2rem .55rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.7rem;font-weight:600}
+    .guide-title{font-size:.95rem;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .guide-meta{font-size:.8rem;color:var(--muted-foreground)}
+    .guide-read-btn{display:inline-flex;align-items:center;gap:.3rem;color:var(--primary);font-size:.84rem;font-weight:600;cursor:pointer;white-space:nowrap}
+    .guide-read-btn:hover{text-decoration:underline}
+
+    /* ── Stats Bar ── */
+    .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--spacing)*4);padding:calc(var(--spacing)*7) 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .stat-item{text-align:center}
+    .stat-value{font-size:1.8rem;font-weight:700;color:var(--primary)}
+    .stat-label{font-size:.82rem;color:var(--muted-foreground);margin-top:.2rem}
+    .stat-sub{font-size:.72rem;color:var(--muted-foreground);margin-top:.1rem;opacity:.7}
+
+    /* ── Footer ── */
+    .footer{margin-top:auto;padding:calc(var(--spacing)*8) calc(var(--spacing)*8) calc(var(--spacing)*6);border-top:1px solid var(--border);background:var(--popover)}
+    .footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:calc(var(--spacing)*8);max-width:1200px;margin:0 auto}
+    .footer-brand .brand-text{font-size:1.05rem;margin-bottom:calc(var(--spacing)*3);display:block}
+    .footer-brand p{font-size:.84rem;color:var(--muted-foreground);line-height:1.6}
+    .footer-col h4{font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-foreground);margin-bottom:calc(var(--spacing)*3)}
+    .footer-col ul{list-style:none;display:flex;flex-direction:column;gap:calc(var(--spacing)*2.5)}
+    .footer-col li a{font-size:.88rem;color:var(--foreground);text-decoration:none;transition:color .2s}
+    .footer-col li a:hover{color:var(--primary)}
+    .footer-bottom{max-width:1200px;margin:calc(var(--spacing)*6) auto 0;padding-top:calc(var(--spacing)*5);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--muted-foreground)}
+
+    /* ── Responsive ── */
+    @media (max-width:1024px){
+      .dest-grid{grid-template-columns:repeat(2,1fr)}
+      .chat-section{grid-template-columns:1fr}
+      .tips-grid{grid-template-columns:repeat(2,1fr)}
+      .footer-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4);flex-wrap:wrap}
+      .nav-links{display:none}
+      .mobile-menu-btn{display:grid}
+      .mobile-nav{display:flex;flex-direction:column;width:100%;padding:calc(var(--spacing)*3) 0 calc(var(--spacing)*4)}
+      .hero-section{padding:calc(var(--spacing)*8) calc(var(--spacing)*4) calc(var(--spacing)*6)}
+      .hero-title{font-size:1.8rem}
+      .main-content{padding:0 calc(var(--spacing)*4) calc(var(--spacing)*8)}
+      .dest-grid{grid-template-columns:1fr}
+      .tips-grid{grid-template-columns:1fr}
+      .tool-entry-grid{grid-template-columns:repeat(2,1fr)}
+      .stats-bar{grid-template-columns:repeat(2,1fr)}
+      .footer-grid{grid-template-columns:1fr}
+      .footer-bottom{flex-direction:column;gap:calc(var(--spacing)*2);text-align:center}
+      .tool-entry-grid{grid-template-columns:1fr}
+    }
+  </style>
+</body>
+</html>

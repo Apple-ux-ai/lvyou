@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TravelMate — 攻略列表</title>
+    <link rel="stylesheet" href="../shared/theme.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+
+
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../shared/utils.js"></script>
+  <script src="../shared/api.js"></script>
+  <script src="../shared/site-nav.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    /* ── SVG Icons ── */
+    function SparkleIcon({ size = 16 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>; }
+    function SunIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>; }
+    function MoonIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>; }
+    function SearchIcon({ size = 18 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>; }
+    function ArrowRightIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>; }
+    function EyeIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>; }
+    function ClockIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
+    function ThumbsUpIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z"/></svg>; }
+    function ChevronDownIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>; }
+    function MapPinIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }
+
+    /* ── Data ── */
+    const allGuides = [
+      { id: "g1", title: "关西 7 天经典家庭线路攻略", author: "旅行达人小王", views: "12.4K", likes: 386, tag: "日本", dest: "日本", days: "7天", cover: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&h=360&fit=crop", time: "2026-05", desc: "带老人小孩的完美节奏，伏见稻荷、岚山、金阁寺、奈良喂鹿全收录，人均 8500 元" },
+      { id: "g2", title: "冰岛冬季追极光 8 天自驾攻略", author: "极光猎人", views: "8.7K", likes: 254, tag: "欧洲", dest: "冰岛", days: "8天", cover: "https://images.unsplash.com/photo-1520769669658-f07657f5a307?w=600&h=360&fit=crop", time: "2026-01", desc: "蓝冰洞、黑沙滩、黄金圈全攻略，四驱自驾安全要点 + 预算明细 2 万起" },
+      { id: "g3", title: "大理 4 天慢生活攻略", author: "背包客阿明", views: "6.2K", likes: 198, tag: "国内", dest: "云南", days: "4天", cover: "https://images.unsplash.com/photo-1528164344705-47542687000d?w=600&h=360&fit=crop", time: "2026-03", desc: "洱海环湖骑行、苍山云海、喜洲白族风情，3000 元搞定四天慢生活" },
+      { id: "g4", title: "巴厘岛乌布梯田与海神庙 6 日", author: "海岛控小美", views: "5.1K", likes: 176, tag: "海岛", dest: "印尼", days: "6天", cover: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&h=360&fit=crop", time: "2026-04", desc: "梯田瑜伽、海神庙日落、库塔冲浪，预算 6000 元含住宿" },
+      { id: "g5", title: "东京 5 天自由行完全指南", author: "东京通", views: "9.8K", likes: 312, tag: "日本", dest: "日本", days: "5天", cover: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=600&h=360&fit=crop", time: "2026-02", desc: "浅草寺、涩谷、秋叶原、迪士尼，第一次去东京看这篇就够了" },
+      { id: "g6", title: "新疆独库公路 6 天自驾", author: "西域行者", views: "7.3K", likes: 289, tag: "国内", dest: "新疆", days: "6天", cover: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600&h=360&fit=crop", time: "2025-10", desc: "独库公路一日四季，那拉提草原、巴音布鲁克日落，自驾者的终极梦想" },
+      { id: "g7", title: "京都红叶季深度摄影攻略", author: "摄影师老周", views: "4.5K", likes: 231, tag: "日本", dest: "日本", days: "5天", cover: "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?w=600&h=360&fit=crop", time: "2025-11", desc: "岚山竹林、琉璃光院、永观堂夜枫，机位 + 时间全公开" },
+      { id: "g8", title: "泰国清迈小众寺庙与夜市", author: "微笑之国", views: "3.9K", likes: 145, tag: "东南亚", dest: "泰国", days: "4天", cover: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=600&h=360&fit=crop", time: "2026-06", desc: "避开游客的小众寺庙、周日夜市、丛林飞跃，人均 3000 元" },
+      { id: "g9", title: "瑞士少女峰 7 天火车之旅", author: "阿尔卑斯", views: "6.8K", likes: 243, tag: "欧洲", dest: "瑞士", days: "7天", cover: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=360&fit=crop", time: "2025-09", desc: "黄金列车、少女峰、因特拉肯滑翔伞，火车迷必收藏" }
+    ];
+
+    const destFilters = ["全部", "日本", "冰岛", "云南", "印尼", "泰国", "瑞士", "新疆"];
+    const tagFilters = ["全部", "日本", "欧洲", "国内", "海岛", "东南亚"];
+    const sortOptions = [
+      { id: "newest", label: "最新" },
+      { id: "hot", label: "最热" },
+      { id: "liked", label: "好评" }
+    ];
+
+    /* ── Components ── */
+    function Topbar() {
+      const [theme, setThemeState] = useState(() => (document.documentElement.classList.contains("dark") ? "dark" : "light"));
+      const toggleTheme = () => setThemeState(window.TravelMate.utils.toggleTheme());
+      return (
+        <header className="topbar">
+          <div className="topbar-left">
+            <a className="brand" href="home.html">
+              <div className="brand-icon"><SparkleIcon size={18} /></div>
+              <span className="brand-text">TravelMate</span>
+            </a>
+            <nav className="nav-links">
+              <a className="nav-link" href="home.html">首页</a>
+              <a className="nav-link" href="explore.html">目的地</a>
+              <a className="nav-link active" href="guides.html">攻略</a>
+              <a className="nav-link" href="community.html">社区</a>
+            </nav>
+          </div>
+          <div className="topbar-right">
+            <button className="icon-btn" title="切换主题" onClick={toggleTheme} aria-label="切换主题">
+              {theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />}
+            </button>
+            <div className="avatar">旅</div>
+          </div>
+        </header>
+      );
+    }
+
+    function FilterBar({ query, onQuery, dest, onDest, tag, onTag, sort, onSort }) {
+      return (
+        <div className="filter-bar">
+          <div className="search-box">
+            <SearchIcon size={18} />
+            <input
+              placeholder="搜索攻略、目的地..."
+              value={query}
+              onChange={(e) => onQuery(e.target.value)}
+            />
+          </div>
+          <div className="filter-row">
+            <div className="chip-group">
+              {destFilters.map((d) => (
+                <button key={d} className={`chip ${dest === d ? "active" : ""}`} onClick={() => onDest(d)}>{d}</button>
+              ))}
+            </div>
+          </div>
+          <div className="filter-row">
+            <div className="chip-group">
+              {tagFilters.map((t) => (
+                <button key={t} className={`chip ${tag === t ? "active" : ""}`} onClick={() => onTag(t)}>{t}</button>
+              ))}
+            </div>
+            <div className="sort-group">
+              {sortOptions.map((s) => (
+                <button key={s.id} className={`chip ${sort === s.id ? "active" : ""}`} onClick={() => onSort(s.id)}>{s.label}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function GuideCard({ guide }) {
+      const handleClick = () => {
+        window.TravelMate.utils.go("guide-detail.html", { id: guide.id });
+      };
+      return (
+        <article className="guide-card" onClick={handleClick} role="link" tabIndex="0" aria-label={`查看攻略 ${guide.title}`}>
+          <div className="guide-cover-wrap">
+            <img className="guide-cover" src={guide.cover} alt={guide.title} loading="lazy" />
+            <span className="guide-tag">{guide.tag}</span>
+            <span className="guide-days"><ClockIcon size={12} /> {guide.days}</span>
+          </div>
+          <div className="guide-body">
+            <h3 className="guide-title">{guide.title}</h3>
+            <p className="guide-desc">{guide.desc}</p>
+            <div className="guide-meta">
+              <span className="guide-author">{guide.author}</span>
+              <span className="guide-stats">
+                <span><EyeIcon size={13} /> {guide.views}</span>
+                <span><ThumbsUpIcon size={13} /> {guide.likes}</span>
+              </span>
+            </div>
+          </div>
+        </article>
+      );
+    }
+
+    function SkeletonCard() {
+      return (
+        <div className="guide-card skeleton">
+          <div className="skeleton-block cover"></div>
+          <div className="guide-body">
+            <div className="skeleton-block line title"></div>
+            <div className="skeleton-block line desc"></div>
+            <div className="skeleton-block line desc short"></div>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [query, setQuery] = useState("");
+      const [dest, setDest] = useState("全部");
+      const [tag, setTag] = useState("全部");
+      const [sort, setSort] = useState("newest");
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        window.TravelMate.utils.initTheme();
+        const t = setTimeout(() => setLoading(false), 800); // 模拟加载
+        return () => clearTimeout(t);
+      }, []);
+
+      const filtered = useMemo(() => {
+        let list = [...allGuides];
+        if (query.trim()) {
+          const q = query.trim().toLowerCase();
+          list = list.filter((g) =>
+            g.title.toLowerCase().includes(q) ||
+            g.author.toLowerCase().includes(q) ||
+            g.dest.toLowerCase().includes(q) ||
+            g.desc.toLowerCase().includes(q)
+          );
+        }
+        if (dest !== "全部") list = list.filter((g) => g.dest === dest);
+        if (tag !== "全部") list = list.filter((g) => g.tag === tag);
+        if (sort === "hot") list.sort((a, b) => parseInt(b.views) - parseInt(a.views));
+        if (sort === "liked") list.sort((a, b) => b.likes - a.likes);
+        if (sort === "newest") list.sort((a, b) => (a.time < b.time ? 1 : -1));
+        return list;
+      }, [query, dest, tag, sort]);
+
+      return (
+        <div className="app">
+          <Topbar />
+          <section className="page-head">
+            <h1>旅行攻略库</h1>
+            <p>来自社区的真实攻略，AI 检索增强回答的可靠来源</p>
+          </section>
+          <div className="page-body">
+            <FilterBar
+              query={query} onQuery={setQuery}
+              dest={dest} onDest={setDest}
+              tag={tag} onTag={setTag}
+              sort={sort} onSort={setSort}
+            />
+            <div className="results-meta">
+              <span>共 {loading ? "..." : filtered.length} 篇攻略</span>
+              {query && <span className="query-hint">搜索「{query}」</span>}
+            </div>
+            {loading ? (
+              <div className="guides-grid">
+                {[1, 2, 3, 4, 5, 6].map((i) => <SkeletonCard key={i} />)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="empty-results">
+                <div className="empty-icon"><SearchIcon size={26} /></div>
+                <h3>没有找到相关攻略</h3>
+                <p>换个关键词试试，或使用 AI 助手直接定制行程</p>
+                <button className="primary-btn" onClick={() => window.TravelMate.utils.go("assistant.html", { query })}>
+                  用 AI 规划行程 <ArrowRightIcon size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="guides-grid">
+                {filtered.map((g) => <GuideCard key={g.id} guide={g} />)}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);letter-spacing:var(--tracking-normal);line-height:1.55}
+    button,input{font:inherit}
+
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:100;height:64px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:calc(var(--spacing)*4);padding:0 calc(var(--spacing)*8);background:var(--background);backdrop-filter:blur(8px)}
+    .brand-icon{width:36px;height:36px;border-radius:calc(var(--radius) + 4px);display:grid;place-items:center;background:var(--primary);color:var(--primary-foreground);font-weight:700}
+    .brand-text{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em}
+    .nav-links{display:flex;align-items:center;gap:calc(var(--spacing)*1.5)}
+    .nav-link{padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3.5);border-radius:var(--radius);background:transparent;border:none;color:var(--muted-foreground);text-decoration:none;cursor:pointer;font-size:.9rem;transition:background .2s,color .2s}
+    .nav-link:hover{background:var(--primary-soft);color:var(--primary)}
+    .nav-link.active{color:var(--foreground);font-weight:600}
+    .icon-btn:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+
+    /* Page Head */
+    .page-head{padding:calc(var(--spacing)*9) calc(var(--spacing)*8) calc(var(--spacing)*5);display:flex;flex-direction:column;gap:calc(var(--spacing)*2);max-width:1200px;margin:0 auto;width:100%}
+    .page-head h1{font-size:1.9rem;font-weight:700;letter-spacing:-0.02em}
+    .page-head p{color:var(--muted-foreground);font-size:.95rem}
+
+    /* Page Body */
+    .page-body{max-width:1200px;margin:0 auto;width:100%;padding:0 calc(var(--spacing)*8) calc(var(--spacing)*10);display:flex;flex-direction:column;gap:calc(var(--spacing)*5)}
+
+    /* Filter Bar */
+    .filter-bar{border:1px solid var(--border);border-radius:calc(var(--radius) + 6px);background:var(--card);padding:calc(var(--spacing)*4);display:flex;flex-direction:column;gap:calc(var(--spacing)*3)}
+    .search-box{display:flex;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*2.5) calc(var(--spacing)*3.5);border:1px solid var(--input);border-radius:999px;background:var(--popover);transition:border-color .2s,box-shadow .2s}
+    .search-box:focus-within{border-color:var(--ring);box-shadow:0 0 0 3px rgba(66,133,244,.12)}
+    .search-box svg{color:var(--muted-foreground);flex:0 0 auto}
+    .search-box input{flex:1;border:none;outline:none;background:transparent;color:var(--foreground);font-size:.9rem}
+    .search-box input::placeholder{color:var(--muted-foreground)}
+    .filter-row{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*3);flex-wrap:wrap}
+    .chip-group{display:flex;gap:calc(var(--spacing)*2);flex-wrap:wrap}
+    .chip{padding:calc(var(--spacing)*1.8) calc(var(--spacing)*3);border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--muted-foreground);font-size:.8rem;cursor:pointer;transition:all .2s}
+    .chip:hover{border-color:var(--primary);color:var(--primary)}
+    .chip.active{background:var(--primary);border-color:var(--primary);color:var(--primary-foreground)}
+    .sort-group{display:flex;gap:calc(var(--spacing)*1.5)}
+
+    /* Results Meta */
+    .results-meta{display:flex;gap:calc(var(--spacing)*3);align-items:center;font-size:.84rem;color:var(--muted-foreground)}
+    .query-hint{padding:.25rem .6rem;border-radius:999px;background:var(--muted);color:var(--muted-foreground);font-size:.74rem}
+
+    /* Guides Grid */
+    .guides-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(var(--spacing)*4)}
+    .guide-card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 6px);overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s}
+    .guide-card:hover{border-color:var(--ring);transform:translateY(-2px)}
+    .guide-card:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+    .guide-cover-wrap{position:relative}
+    .guide-cover{width:100%;height:170px;object-fit:cover;display:block}
+    .guide-tag{position:absolute;top:10px;left:10px;padding:.25rem .6rem;border-radius:999px;background:rgba(14,17,21,.55);backdrop-filter:blur(4px);color:#fff;font-size:.72rem;font-weight:600}
+    .guide-days{position:absolute;top:10px;right:10px;display:inline-flex;align-items:center;gap:.25rem;padding:.25rem .6rem;border-radius:999px;background:rgba(255,255,255,.85);color:var(--foreground);font-size:.72rem;font-weight:600}
+    .guide-body{padding:calc(var(--spacing)*4)}
+    .guide-title{font-size:.98rem;font-weight:700;line-height:1.4;margin-bottom:calc(var(--spacing)*2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .guide-desc{font-size:.8rem;color:var(--muted-foreground);line-height:1.55;margin-bottom:calc(var(--spacing)*3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .guide-meta{display:flex;justify-content:space-between;align-items:center;gap:calc(var(--spacing)*2);padding-top:calc(var(--spacing)*2.5);border-top:1px solid var(--border)}
+    .guide-author{font-size:.78rem;color:var(--muted-foreground)}
+    .guide-stats{display:flex;gap:calc(var(--spacing)*3);font-size:.74rem;color:var(--muted-foreground)}
+    .guide-stats span{display:inline-flex;align-items:center;gap:.25rem}
+
+    /* Skeleton */
+    .guide-card.skeleton{cursor:default;pointer-events:none}
+    .skeleton-block{background:linear-gradient(90deg,var(--muted) 25%,var(--popover) 50%,var(--muted) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+    @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .skeleton-block.cover{height:170px}
+    .skeleton-block.line{height:14px;border-radius:4px;margin-bottom:calc(var(--spacing)*2)}
+    .skeleton-block.line.title{width:80%;height:16px}
+    .skeleton-block.line.desc{width:100%}
+    .skeleton-block.line.desc.short{width:60%}
+
+    /* Empty */
+    .empty-results{display:flex;flex-direction:column;align-items:center;gap:calc(var(--spacing)*3);padding:calc(var(--spacing)*10) calc(var(--spacing)*4);text-align:center}
+    .empty-icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--muted);color:var(--muted-foreground)}
+    .empty-results h3{font-size:1.1rem;font-weight:700}
+    .empty-results p{color:var(--muted-foreground);font-size:.88rem}
+    .primary-btn{display:inline-flex;align-items:center;gap:.4rem;padding:calc(var(--spacing)*2.5) calc(var(--spacing)*4.5);border:none;border-radius:var(--radius);background:var(--primary);color:var(--primary-foreground);font-weight:600;font-size:.86rem;cursor:pointer;transition:opacity .2s}
+    .primary-btn:hover{opacity:.9}
+
+    /* Responsive */
+    @media (max-width:1024px){
+      .guides-grid{grid-template-columns:repeat(2,1fr)}
+      .page-head,.page-body{padding-left:calc(var(--spacing)*5);padding-right:calc(var(--spacing)*5)}
+    }
+    @media (max-width:768px){
+      .topbar{padding:0 calc(var(--spacing)*4)}
+      .nav-links{display:none}
+      .guides-grid{grid-template-columns:1fr}
+      .page-head{padding:calc(var(--spacing)*6) calc(var(--spacing)*4) calc(var(--spacing)*4)}
+      .page-body{padding:0 calc(var(--spacing)*4) calc(var(--spacing)*8)}
+      .filter-row{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</body>
+</html>

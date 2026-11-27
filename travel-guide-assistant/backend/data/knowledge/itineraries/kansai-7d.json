@@ -1,0 +1,62 @@
+{
+  "source_id": "itinerary-kansai-7d",
+  "destination": "日本关西（京都/奈良/大阪/神户）",
+  "budget_cny_per_person": 8500,
+  "suitable_for": ["家庭", "首次访日"],
+  "days": [
+    {
+      "day": 1,
+      "city": "京都",
+      "theme": "抵达与伏见稻荷",
+      "morning": "抵达关西机场，乘 Haruka 特急至京都（约 80 分钟）",
+      "afternoon": "伏见稻荷大社（千本鸟居）",
+      "evening": "锦市场夜游"
+    },
+    {
+      "day": 2,
+      "city": "京都",
+      "theme": "岚山与金阁寺",
+      "morning": "岚山竹林与渡月桥",
+      "afternoon": "金阁寺",
+      "evening": "祇园花见小路"
+    },
+    {
+      "day": 3,
+      "city": "奈良",
+      "theme": "一日往返",
+      "morning": "东大寺与奈良公园喂鹿",
+      "afternoon": "春日大社",
+      "evening": "返回京都"
+    },
+    {
+      "day": 4,
+      "city": "大阪",
+      "theme": "城市漫游",
+      "morning": "大阪城公园",
+      "afternoon": "通天阁与新世界",
+      "evening": "道顿堀美食街"
+    },
+    {
+      "day": 5,
+      "city": "大阪",
+      "theme": "环球影城（可选）",
+      "morning": "全天游览 USJ 环球影城",
+      "tip": "提前购买快速通行券"
+    },
+    {
+      "day": 6,
+      "city": "神户",
+      "theme": "异国风情",
+      "morning": "北野异人馆",
+      "afternoon": "神户牛肉午餐，随后前往六甲山或摩耶山",
+      "evening": "欣赏山上夜景"
+    },
+    {
+      "day": 7,
+      "city": "大阪",
+      "theme": "返程",
+      "morning": "临空城奥特莱斯",
+      "afternoon": "机场返程"
+    }
+  ]
+}

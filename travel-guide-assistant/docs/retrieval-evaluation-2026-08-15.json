@@ -1,0 +1,583 @@
+{
+  "persist": "C:\\Users\\Administrator\\Desktop\\lvyou\\travel-guide-assistant\\backend\\chroma_data",
+  "collection": "knowledge",
+  "embedding_model": "hash-ngram-v2",
+  "embedding_dimension": 1024,
+  "index": {
+    "backend": "json",
+    "collection": "knowledge",
+    "persist_dir": "C:\\Users\\Administrator\\Desktop\\lvyou\\travel-guide-assistant\\backend\\chroma_data",
+    "chunk_count": 28,
+    "source_count": 10,
+    "embedding_model": "hash-ngram-v2",
+    "embedding_dimension": 1024,
+    "stored_dimensions": [
+      1024
+    ],
+    "embedding_compatible": true,
+    "manifest": {
+      "path": "C:\\Users\\Administrator\\Desktop\\lvyou\\travel-guide-assistant\\backend\\chroma_data\\knowledge.manifest.json",
+      "present": true,
+      "compatible": true,
+      "status": "ok",
+      "embedding_match": true,
+      "chunking_match": true,
+      "sources_match": true,
+      "chunks_match": true,
+      "manifest_source_count": 10,
+      "manifest_chunk_count": 28
+    },
+    "embedding_cache": {
+      "path": "C:\\Users\\Administrator\\Desktop\\lvyou\\travel-guide-assistant\\backend\\chroma_data\\knowledge.embedding-cache.sqlite3",
+      "entries": 0
+    }
+  },
+  "evaluation": {
+    "query_count": 20,
+    "recall_at_1": 0.9,
+    "recall_at_3": 1.0,
+    "recall_at_5": 1.0,
+    "mrr": 0.95,
+    "source_precision": 0.4051,
+    "precision_at_1": 0.9,
+    "precision_at_3": 0.525,
+    "precision_at_5": 0.4317,
+    "latency_ms": {
+      "mean": 10.772,
+      "p50": 7.328,
+      "p95": 14.23
+    },
+    "rows": [
+      {
+        "id": "qa-001",
+        "question": "五一去日本关西玩 7 天，预算 1 万左右，有什么推荐？",
+        "expected_sources": [
+          "japan-kansai",
+          "kansai-7d",
+          "kansai-7day-family"
+        ],
+        "sources": [
+          "japan-kansai",
+          "kansai-7day-family",
+          "kansai-iceland-pois",
+          "kansai-7d",
+          "dali-4day-slow"
+        ],
+        "scores": [
+          0.572555,
+          0.562138,
+          0.549674,
+          0.520568,
+          0.503974
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 71.328,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-002",
+        "question": "申请日本旅游签证需要准备什么材料？",
+        "expected_sources": [
+          "japan-visa"
+        ],
+        "sources": [
+          "japan-visa",
+          "japan-kansai",
+          "iceland",
+          "kansai-iceland-pois",
+          "thailand-bangkok"
+        ],
+        "scores": [
+          0.640952,
+          0.562503,
+          0.500422,
+          0.419455,
+          0.413502
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 6.948,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-003",
+        "question": "冰岛冬季自驾追极光安全吗？需要注意什么？",
+        "expected_sources": [
+          "iceland",
+          "iceland-aurora-8day"
+        ],
+        "sources": [
+          "iceland-aurora-8day",
+          "iceland",
+          "kansai-iceland-pois",
+          "dali-4day-slow"
+        ],
+        "scores": [
+          0.622294,
+          0.527416,
+          0.498025,
+          0.474508
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.401,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-004",
+        "question": "京都必去的景点有哪些？",
+        "expected_sources": [
+          "japan-kansai",
+          "kansai-7day-family",
+          "kansai-iceland-pois"
+        ],
+        "sources": [
+          "japan-kansai",
+          "bangkok-4day-city-food",
+          "kansai-iceland-pois",
+          "kansai-7day-family"
+        ],
+        "scores": [
+          0.446968,
+          0.432276,
+          0.425959,
+          0.416469
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 6.692,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-005",
+        "question": "大理玩几天合适？预算大概多少？",
+        "expected_sources": [
+          "dali-4day-slow"
+        ],
+        "sources": [
+          "dali-4day-slow",
+          "japan-kansai",
+          "thailand-bangkok",
+          "iceland-aurora-8day"
+        ],
+        "scores": [
+          0.467446,
+          0.449048,
+          0.425994,
+          0.418691
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.095,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-006",
+        "question": "去冰岛追极光要准备多少钱？",
+        "expected_sources": [
+          "iceland",
+          "iceland-aurora-8day"
+        ],
+        "sources": [
+          "iceland-aurora-8day",
+          "iceland",
+          "kansai-iceland-pois"
+        ],
+        "scores": [
+          0.554553,
+          0.466699,
+          0.453371
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 6.99,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-007",
+        "question": "关西有哪些值得吃的美食？",
+        "expected_sources": [
+          "kansai-7day-family",
+          "kansai-iceland-pois"
+        ],
+        "sources": [
+          "kansai-7day-family",
+          "kansai-iceland-pois",
+          "japan-kansai",
+          "bangkok-4day-city-food"
+        ],
+        "scores": [
+          0.469058,
+          0.452769,
+          0.431171,
+          0.431053
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 6.911,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-008",
+        "question": "奈良公园可以喂鹿吗？",
+        "expected_sources": [
+          "kansai-7day-family",
+          "kansai-iceland-pois"
+        ],
+        "sources": [
+          "kansai-7d",
+          "kansai-iceland-pois",
+          "kansai-7day-family",
+          "japan-kansai"
+        ],
+        "scores": [
+          0.530592,
+          0.529366,
+          0.510078,
+          0.454105
+        ],
+        "first_relevant_rank": 2,
+        "latency_ms": 7.877,
+        "hit": {
+          "1": false,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-009",
+        "question": "日本关西什么时候去最适合看樱花或红叶？",
+        "expected_sources": [
+          "japan-kansai"
+        ],
+        "sources": [
+          "japan-kansai",
+          "kansai-7day-family",
+          "kansai-iceland-pois",
+          "kansai-7d",
+          "dali-4day-slow"
+        ],
+        "scores": [
+          0.55141,
+          0.548376,
+          0.540881,
+          0.523451,
+          0.442206
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.489,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-010",
+        "question": "从关西机场到京都怎么走，大约需要多久？",
+        "expected_sources": [
+          "japan-kansai",
+          "kansai-7d"
+        ],
+        "sources": [
+          "japan-kansai",
+          "kansai-7day-family",
+          "kansai-7d",
+          "kansai-iceland-pois"
+        ],
+        "scores": [
+          0.534581,
+          0.529711,
+          0.51182,
+          0.476163
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 8.698,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-011",
+        "question": "京都市内主要靠什么交通？有没有一日券？",
+        "expected_sources": [
+          "japan-kansai"
+        ],
+        "sources": [
+          "japan-kansai",
+          "kansai-7d",
+          "bangkok-4day-city-food",
+          "kansai-iceland-pois",
+          "iceland"
+        ],
+        "scores": [
+          0.544514,
+          0.474726,
+          0.452166,
+          0.431724,
+          0.407157
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 6.848,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-012",
+        "question": "冰岛冬季自驾出发前应该检查哪些安全事项？",
+        "expected_sources": [
+          "iceland",
+          "iceland-aurora-8day"
+        ],
+        "sources": [
+          "iceland-aurora-8day",
+          "kansai-iceland-pois",
+          "iceland",
+          "japan-visa",
+          "thailand-bangkok"
+        ],
+        "scores": [
+          0.571105,
+          0.497018,
+          0.465108,
+          0.441903,
+          0.414495
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.266,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-013",
+        "question": "去冰岛旅游需要办理哪种签证，保险有什么要求？",
+        "expected_sources": [
+          "iceland"
+        ],
+        "sources": [
+          "iceland",
+          "japan-visa",
+          "japan-kansai",
+          "iceland-aurora-8day"
+        ],
+        "scores": [
+          0.565029,
+          0.532468,
+          0.495554,
+          0.458437
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.15,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-014",
+        "question": "大理环洱海租电动车大概多少钱？",
+        "expected_sources": [
+          "dali-4day-slow"
+        ],
+        "sources": [
+          "dali-4day-slow",
+          "iceland",
+          "japan-kansai"
+        ],
+        "scores": [
+          0.559346,
+          0.423181,
+          0.414946
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.39,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-015",
+        "question": "大理古城住宿和淡季价格有什么建议？",
+        "expected_sources": [
+          "dali-4day-slow"
+        ],
+        "sources": [
+          "dali-4day-slow",
+          "thailand-bangkok",
+          "iceland",
+          "japan-kansai",
+          "kansai-iceland-pois"
+        ],
+        "scores": [
+          0.52642,
+          0.502651,
+          0.446868,
+          0.437878,
+          0.430345
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 6.997,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-016",
+        "question": "日本签证通常由谁递交，审核要多久？",
+        "expected_sources": [
+          "japan-visa"
+        ],
+        "sources": [
+          "japan-visa",
+          "japan-kansai",
+          "iceland",
+          "kansai-iceland-pois"
+        ],
+        "scores": [
+          0.541117,
+          0.495806,
+          0.446536,
+          0.412458
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 8.456,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-017",
+        "question": "曼谷什么时候去天气比较舒服？",
+        "expected_sources": [
+          "thailand-bangkok"
+        ],
+        "sources": [
+          "bangkok-4day-city-food",
+          "thailand-bangkok"
+        ],
+        "scores": [
+          0.489951,
+          0.488807
+        ],
+        "first_relevant_rank": 2,
+        "latency_ms": 11.225,
+        "hit": {
+          "1": false,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-018",
+        "question": "第一次去曼谷 4 天，寺庙和美食怎么安排？",
+        "expected_sources": [
+          "bangkok-4day-city-food",
+          "thailand-bangkok"
+        ],
+        "sources": [
+          "bangkok-4day-city-food",
+          "thailand-bangkok",
+          "kansai-iceland-pois",
+          "kansai-7d"
+        ],
+        "scores": [
+          0.567358,
+          0.541482,
+          0.479323,
+          0.457215
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.749,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-019",
+        "question": "曼谷市内出行应该选什么交通方式？",
+        "expected_sources": [
+          "bangkok-4day-city-food",
+          "thailand-bangkok"
+        ],
+        "sources": [
+          "thailand-bangkok",
+          "bangkok-4day-city-food"
+        ],
+        "scores": [
+          0.528717,
+          0.519923
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.021,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      },
+      {
+        "id": "qa-020",
+        "question": "曼谷晚上去哪里逛街吃东西比较合适？",
+        "expected_sources": [
+          "bangkok-4day-city-food"
+        ],
+        "sources": [
+          "bangkok-4day-city-food",
+          "thailand-bangkok",
+          "dali-4day-slow"
+        ],
+        "scores": [
+          0.506384,
+          0.483036,
+          0.444362
+        ],
+        "first_relevant_rank": 1,
+        "latency_ms": 7.905,
+        "hit": {
+          "1": true,
+          "3": true,
+          "5": true
+        }
+      }
+    ]
+  }
+}
