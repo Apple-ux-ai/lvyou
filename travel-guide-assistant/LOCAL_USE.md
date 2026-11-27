@@ -21,10 +21,12 @@
 ```dotenv
 DEEPSEEK_API_KEY=你的密钥
 DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_MODEL=deepseek-flash
 ```
 
-不要提交或分享 `backend/.env`。没有 DeepSeek 密钥时，对话会使用本地 LLM fallback；embedding provider 仍按下方配置单独决定。
+模型名以 [DeepSeek 官方模型列表](https://api-docs.deepseek.com/quick_start/pricing/) 为准。如果旧的 `backend/.env` 仍配置了 `deepseek-chat`，请改成 `deepseek-flash` 后重启后端。
+
+不要提交或分享 `backend/.env`。没有 DeepSeek 密钥，或生成行程时 DeepSeek 请求失败，都可能得到本地模板结果。看到行程不代表已连通 DeepSeek；可查看 `.local/logs/backend.err.log` 排查。检索用的 embedding provider 仍单独配置。
 
 当前离线开发环境应显式配置 Hash provider，避免把降级路径误当成语义模型：
 
