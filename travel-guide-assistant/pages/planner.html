@@ -13,6 +13,7 @@
   <div id="root"></div>
   <script src="../shared/utils.js"></script>
   <script src="../shared/api.js"></script>
+  <script src="../shared/trip-planner.js"></script>
   <script src="../shared/site-nav.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -40,6 +41,7 @@
     function AlertIcon({ size = 14 }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>; }
 
     const CATEGORY_META = {
+      other: { label: "活动", icon: <MapPinIcon size={12} />, color: "var(--muted-foreground)" },
       food: { label: "餐饮", icon: <UtensilsIcon size={12} />, color: "var(--chart-3)" },
       stay: { label: "住宿", icon: <BedIcon size={12} />, color: "var(--chart-1)" },
       transport: { label: "交通", icon: <CarIcon size={12} />, color: "var(--chart-2)" },
@@ -90,44 +92,6 @@
       ]
     };
 
-    function plannerTripFromApi(savedTrip) {
-      return {
-        id: savedTrip.id,
-        title: `${savedTrip.destination} ${savedTrip.days} 天行程`,
-        destination: savedTrip.destination,
-        days: savedTrip.days,
-        totalBudget: savedTrip.total_budget || 8500,
-        tips: savedTrip.tips || [],
-        dayPlans: (savedTrip.day_plans || []).map((day) => ({
-          day: day.day,
-          title: day.title || `第 ${day.day} 天`,
-          items: (day.activities || []).map((text, index) => ({
-            id: `${day.day}-${index}`,
-            time: "10:00",
-            text,
-            cat: "ticket",
-            budget: Math.round((day.budget || 0) / Math.max(day.activities.length, 1))
-          }))
-        }))
-      };
-    }
-
-    function itineraryFromPlannerTrip(trip) {
-      return {
-        destination: trip.destination,
-        days: trip.days,
-        total_budget: trip.totalBudget,
-        tips: trip.tips || [],
-        day_plans: trip.dayPlans.map((day) => ({
-          day: day.day,
-          title: day.title,
-          activities: day.items.map((item) => item.text),
-          transport: null,
-          budget: day.items.reduce((sum, item) => sum + (item.budget || 0), 0)
-        }))
-      };
-    }
-
     function loadTrip() {
       try {
         const raw = localStorage.getItem("travelmate-planner-draft");
@@ -136,7 +100,7 @@
           if (parsed && parsed.dayPlans) return parsed;
         }
       } catch (e) { /* ignore */ }
-      return JSON.parse(JSON.stringify(DEFAULT_TRIP));
+      return { ...JSON.parse(JSON.stringify(DEFAULT_TRIP)), isSample: true };
     }
 
     function Topbar({ onSave, saving }) {
@@ -162,7 +126,8 @@
     }
 
     function PlannerHeader({ trip, total }) {
-      const overBudget = total > trip.totalBudget;
+      const hasBudget = trip.totalBudget != null;
+      const overBudget = hasBudget && total > trip.totalBudget;
       return (
         <div className="planner-head">
           <div className="planner-title-block">
@@ -170,16 +135,16 @@
             <div className="planner-meta">
               <span><MapPinIcon size={14} /> {trip.destination}</span>
               <span><ClockIcon size={14} /> {trip.days} 天</span>
-              <span><WalletIcon size={14} /> 预算 ¥{trip.totalBudget.toLocaleString()}</span>
+              <span><WalletIcon size={14} /> {hasBudget ? "预算 ¥" + trip.totalBudget.toLocaleString() : "未设置行程总预算"}</span>
             </div>
           </div>
           <div className="planner-progress">
             <div className="progress-label">
-              <span>已用 ¥{total.toLocaleString()}</span>
-              <span className={overBudget ? "over" : ""}>{overBudget ? "超支 ¥" + (total - trip.totalBudget).toLocaleString() : "剩余 ¥" + (trip.totalBudget - total).toLocaleString()}</span>
+              <span>已填估算 ¥{total.toLocaleString()}</span>
+              <span className={overBudget ? "over" : ""}>{!hasBudget ? "" : overBudget ? "超支 ¥" + (total - trip.totalBudget).toLocaleString() : "剩余 ¥" + (trip.totalBudget - total).toLocaleString()}</span>
             </div>
             <div className="progress-track">
-              <div className="progress-fill" style={{ width: Math.min(100, (total / trip.totalBudget) * 100) + "%" }}></div>
+              <div className="progress-fill" style={{ width: Math.min(100, (trip.totalBudget > 0 ? (total / trip.totalBudget) * 100 : 0)) + "%" }}></div>
             </div>
           </div>
         </div>
@@ -199,7 +164,7 @@
       );
     }
 
-    function ActivityItem({ item, index, onDrop, onDragStart, onDelete }) {
+    function ActivityItem({ item, index, count, onDrop, onDragStart, onDelete, onEdit }) {
       const meta = CATEGORY_META[item.cat] || CATEGORY_META.ticket;
       return (
         <div
@@ -210,28 +175,32 @@
           onDrop={(e) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData("text/plain"), 10); if (!isNaN(from)) onDrop(from, index); }}
         >
           <div className="activity-grip"><GripIcon size={13} /></div>
-          <div className="activity-time">{item.time}</div>
+          <input className="form-input activity-time" aria-label={item.text + " 到达时间"} type="time" value={item.time || ""} onChange={(e) => onEdit(index, { time: e.target.value })} />
           <div className="activity-main">
-            <div className="activity-text">{item.text}</div>
+            <input className="form-input activity-text" aria-label="活动名称" maxLength={500} value={item.text} onChange={(e) => onEdit(index, { text: e.target.value })} />
             <span className="activity-cat" style={{ background: meta.color + "1a", color: meta.color }}>{meta.icon} {meta.label}</span>
           </div>
-          <div className="activity-budget">¥{item.budget}</div>
+          <div className="activity-budget">{item.budget == null ? "未估价" : "¥" + item.budget}</div>
+          <div className="activity-reorder">
+            <button type="button" aria-label={item.text + " 上移"} disabled={index === 0} onClick={() => onDrop(index, index - 1)}>↑</button>
+            <button type="button" aria-label={item.text + " 下移"} disabled={index === count - 1} onClick={() => onDrop(index, index + 1)}>↓</button>
+          </div>
           <button className="activity-delete" onClick={() => onDelete(index)} aria-label="删除"><TrashIcon size={13} /></button>
         </div>
       );
     }
 
-    function DayPanel({ trip, activeDay, onDrop, onDragStart, onDelete, onAdd }) {
+    function DayPanel({ trip, activeDay, onDrop, onDragStart, onDelete, onAdd, onEdit }) {
       const day = trip.dayPlans.find((d) => d.day === activeDay) || trip.dayPlans[0];
       const [text, setText] = useState("");
-      const [time, setTime] = useState("10:00");
-      const [cat, setCat] = useState("ticket");
+      const [time, setTime] = useState("");
+      const [cat, setCat] = useState("other");
       const [budget, setBudget] = useState("");
       const [showForm, setShowForm] = useState(false);
 
       const submitAdd = () => {
         if (!text.trim()) return;
-        onAdd(day.day, { time, text: text.trim(), cat, budget: parseFloat(budget) || 0 });
+        onAdd(day.day, { time, text: text.trim(), cat, budget: budget === "" ? null : Math.max(0, Number(budget)) });
         setText(""); setBudget(""); setShowForm(false);
       };
 
@@ -247,16 +216,17 @@
 
           {showForm && (
             <div className="add-form">
-              <input className="form-input wide" placeholder="活动内容，如：清水寺参拜" value={text} onChange={(e) => setText(e.target.value)} />
+              <input className="form-input wide" aria-label="活动内容" maxLength={500} placeholder="活动内容，如：清水寺参拜" value={text} onChange={(e) => setText(e.target.value)} />
               <div className="form-row">
-                <input className="form-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-                <select className="form-input" value={cat} onChange={(e) => setCat(e.target.value)}>
+                <input className="form-input" type="time" aria-label="新活动到达时间" value={time} onChange={(e) => setTime(e.target.value)} />
+                <select className="form-input" aria-label="活动类型" value={cat} onChange={(e) => setCat(e.target.value)}>
+                  <option value="other">活动</option>
                   <option value="ticket">门票</option>
                   <option value="food">餐饮</option>
                   <option value="stay">住宿</option>
                   <option value="transport">交通</option>
                 </select>
-                <input className="form-input" type="number" placeholder="预算 ¥" value={budget} onChange={(e) => setBudget(e.target.value)} />
+                <input className="form-input" type="number" min="0" aria-label="活动预算" placeholder="预算 ¥" value={budget} onChange={(e) => setBudget(e.target.value)} />
                 <button className="primary-btn" onClick={submitAdd}><CheckIcon size={13} /> 添加</button>
               </div>
             </div>
@@ -265,7 +235,7 @@
           <div className="activity-list">
             {day.items.length === 0 && <div className="empty-day">这一天还没有安排，点击「添加安排」</div>}
             {day.items.map((item, i) => (
-              <ActivityItem key={item.id} item={item} index={i} onDrop={onDrop} onDragStart={onDragStart} onDelete={onDelete} />
+              <ActivityItem key={item.id} item={item} index={i} count={day.items.length} onDrop={onDrop} onDragStart={onDragStart} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </div>
         </div>
@@ -275,7 +245,7 @@
     function BudgetSidebar({ trip }) {
       let grandTotal = 0;
       const rows = trip.dayPlans.map((d) => {
-        const sum = d.items.reduce((acc, it) => acc + (it.budget || 0), 0);
+        const sum = window.TravelMate.planner.dayBudget(d) ?? 0;
         grandTotal += sum;
         return { day: d.day, title: d.title, sum };
       });
@@ -284,7 +254,7 @@
           <h3 className="sidebar-title">预算追踪</h3>
           <div className="budget-total">
             <span>总预算</span>
-            <strong>¥{trip.totalBudget.toLocaleString()}</strong>
+            <strong>{trip.totalBudget == null ? "未设置" : "¥" + trip.totalBudget.toLocaleString()}</strong>
           </div>
           <div className="budget-rows">
             {rows.map((r) => (
@@ -298,15 +268,78 @@
             ))}
           </div>
           <div className="budget-sum">
-            <span>合计</span>
+            <span>已填估算合计</span>
             <strong>¥{grandTotal.toLocaleString()}</strong>
           </div>
           <div className="sidebar-tip">
             <AlertIcon size={14} />
-            <p>拖拽活动卡片可调整当天顺序；预算超支时此处会标红提醒。</p>
+            <p>可用上下按钮或拖拽调整当天顺序。行程估算与官方日元门票分开显示。</p>
           </div>
         </aside>
       );
+    }
+
+    const REVIEW_ISSUES = {
+      missing_schedule: "缺少日期或到达时间。",
+      outside_admission: "计划到达时间不在公布的入场时段内。",
+      closed: "当天为公布的休馆日。",
+      source_stale: "资料已超过 180 天未复核，请查看官网。",
+      outside_source_period: "出行日期不在这份资料的适用期内。",
+      ticket_budget_exceeded: "已知门票小计超过门票预算。"
+    };
+
+    function TripReview({ trip, onChange }) {
+      const [review, setReview] = useState(null);
+      const [pending, setPending] = useState(false);
+      const [error, setError] = useState("");
+      const payload = window.TravelMate.planner.toApi(trip);
+      const key = JSON.stringify(payload);
+      const current = review && review.key === key ? review.data : null;
+      const run = (event) => {
+        event.preventDefault();
+        if (trip.dayPlans.some((day) => day.items.some((item) => !item.text.trim()))) {
+          setError("请填写活动名称，或删除空白活动后再检查。");
+          return;
+        }
+        setPending(true); setError(""); setReview(null);
+        window.TravelMate.api.checkTrip(payload, (data) => {
+          setReview({ key, data }); setPending(false);
+        }, () => {
+          setError("暂时无法核验。请确认本地后端已启动，再试一次。"); setPending(false);
+        });
+      };
+      return <section className="review-panel" aria-label="行程核验">
+        <h2>出发前检查</h2>
+        {trip.isSample && <p>这是关西示例行程；示例价格和时间不是实时信息。</p>}
+        <p>按景点当地时间填日期和到达时间。目前支持大阪城天守阁（非公园）和金阁寺；不保证临时开放或有票。</p>
+        <form onSubmit={run} className="review-form">
+          <label>出发日期 <input className="form-input" type="date" value={trip.startDate || ""} onChange={(e) => onChange({ startDate: e.target.value })} /></label>
+          <label>成人数 <input className="form-input" type="number" min="1" max="99" value={trip.adultCount ?? ""} onChange={(e) => onChange({ adultCount: e.target.value })} /></label>
+          <label>全团门票预算（日元） <input className="form-input" type="number" min="0" max="100000000" value={trip.attractionCap ?? ""} onChange={(e) => onChange({ attractionCap: e.target.value })} /></label>
+          <button className="primary-btn" type="submit" disabled={pending}>{pending ? "检查中…" : "检查行程"}</button>
+          <button className="add-btn" type="button" onClick={() => window.print()}>打印全部行程 / 存 PDF</button>
+        </form>
+        {error && <p role="alert">{error}</p>}
+        {review && !current && <p role="status">行程已改动，请重新检查。</p>}
+        {current && <div role="status" className="review-results">
+          <p>已知成人门票小计：{current.known_ticket_total_jpy == null ? "未计算" : current.known_ticket_total_jpy.toLocaleString() + " 日元"}；{current.unchecked_ticket_stops} 项门票或活动费用未核实。此小计不含交通及其他花费。</p>
+          {current.issues.length > 0 && <ul>{current.issues.map((issue, i) => <li key={i}>{issue.day ? "第 " + issue.day + " 天 · " + issue.name + "：" : ""}{REVIEW_ISSUES[issue.code]}</li>)}</ul>}
+          <ul>{current.stops.map((stop, i) => <li key={i}>第 {stop.day} 天{stop.date && "（" + stop.date + "）"} · {stop.name}：{stop.status === "within_published_hours" ? "在公布时段内" : stop.status === "conflict" ? "与公布时段冲突" : "待核实"} {stop.opens && <span className="stop-facts">公布开放 {stop.opens}–{stop.closes}{stop.last_admission && " · 最晚入场 " + stop.last_admission} · 成人 {stop.adult_ticket_jpy.toLocaleString()} 日元/人　</span>} {stop.source_url && <a href={stop.source_url} target="_blank" rel="noreferrer">官方资料（{stop.verified_on}）</a>} {stop.map_url && <a href={stop.map_url} target="_blank" rel="noreferrer">地图</a>}</li>)}</ul>
+        </div>}
+      </section>;
+    }
+
+    function PrintableTrip({ trip }) {
+      return <div className="print-trip">
+        <h1>{trip.title}</h1>
+        <p>{trip.startDate ? "出发日期：" + trip.startDate : "出发日期未定"}{trip.isSample && " · 示例行程"}</p>
+        {trip.dayPlans.map((day) => <section key={day.day}>
+          <h2>第 {day.day} 天 · {day.title}</h2>
+          {day.transport && <p>交通：{day.transport}</p>}
+          <ol>{day.items.map((item) => <li key={item.id}>{item.time || "时间待定"} · {item.text}</li>)}</ol>
+        </section>)}
+        <p>开放、票价与交通可能变化，请出发前核对官方信息。</p>
+      </div>;
     }
 
     function App() {
@@ -316,6 +349,7 @@
       const [tripId, setTripId] = useState(() => window.TravelMate.utils.getQueryParam("tripId"));
       const [loading, setLoading] = useState(() => Boolean(window.TravelMate.utils.getQueryParam("tripId")));
       const [saving, setSaving] = useState(false);
+      const [loadError, setLoadError] = useState("");
       const [saveError, setSaveError] = useState("");
 
       useEffect(() => {
@@ -325,14 +359,14 @@
         const savedId = window.TravelMate.utils.getQueryParam("tripId");
         if (!savedId) return;
         window.TravelMate.api.getTrip(savedId, (savedTrip) => {
-          const loadedTrip = plannerTripFromApi(savedTrip);
+          const loadedTrip = window.TravelMate.planner.fromApi(savedTrip);
           setTrip(loadedTrip);
           setTripId(savedTrip.id);
           setActiveDay(loadedTrip.dayPlans[0] ? loadedTrip.dayPlans[0].day : 1);
           setLoading(false);
         }, (error) => {
           setLoading(false);
-          setSaveError(error && error.message ? `读取行程失败：${error.message}` : "读取行程失败，请返回个人中心重试");
+          setLoadError(error && error.message ? `读取行程失败：${error.message}` : "读取行程失败，请返回个人中心重试");
         });
       }, []);
 
@@ -341,7 +375,7 @@
         setTrip((prev) => {
           const next = JSON.parse(JSON.stringify(prev));
           const day = next.dayPlans.find((d) => d.day === dayIdx);
-          if (!day) return prev;
+          if (!day || from < 0 || to < 0 || from >= day.items.length || to >= day.items.length) return prev;
           const [moved] = day.items.splice(from, 1);
           day.items.splice(to, 0, moved);
           return next;
@@ -368,16 +402,32 @@
         });
       };
 
-      const total = trip.dayPlans.reduce((acc, d) => acc + d.items.reduce((a, it) => a + (it.budget || 0), 0), 0);
+
+      const editItem = (dayIdx, index, patch) => setTrip((previous) => ({
+        ...previous, dayPlans: previous.dayPlans.map((day) => day.day !== dayIdx ? day : {
+          ...day, items: day.items.map((item, i) => i === index ? { ...item, ...patch } : item)
+        })
+      }));
+
+      const total = trip.dayPlans.reduce((sum, day) => sum + (window.TravelMate.planner.dayBudget(day) ?? 0), 0);
 
       const handleSave = () => {
         if (saving) return;
+        if (trip.dayPlans.some((day) => day.items.some((item) => !item.text.trim()))) {
+          setSaveError("请填写活动名称，或删除空白活动后再保存。");
+          return;
+        }
         setSaving(true);
         setSaveError("");
-        const itinerary = itineraryFromPlannerTrip(trip);
+        const itinerary = window.TravelMate.planner.toApi(trip);
         const onOk = (savedTrip) => {
           setSaving(false);
           setTripId(savedTrip.id);
+          if (!tripId) {
+            const url = new URL(window.location.href);
+            url.searchParams.set("tripId", savedTrip.id);
+            window.history.replaceState(null, "", url);
+          }
           localStorage.removeItem("travelmate-planner-draft");
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
@@ -393,6 +443,9 @@
         }
       };
 
+      if (loadError) {
+        return <div className="app"><div className="page-state error" role="alert">{loadError} <button onClick={() => location.reload()}>重试</button> <a href="profile.html">返回个人中心</a></div></div>;
+      }
       if (loading) {
         return <div className="app"><Topbar onSave={() => {}} saving /><div className="page-state">正在加载行程...</div></div>;
       }
@@ -402,17 +455,21 @@
           <Topbar onSave={handleSave} saving={saving} />
           {saveError && <div className="page-state error" role="alert">{saveError}<button className="ghost-btn" onClick={() => setSaveError("")}>知道了</button></div>}
           <PlannerHeader trip={trip} total={total} />
+          <TripReview trip={trip} onChange={(patch) => setTrip((prev) => ({ ...prev, ...patch }))} />
+          <PrintableTrip trip={trip} />
           <DayTabs trip={trip} activeDay={activeDay} onSelect={setActiveDay} />
           <div className="planner-layout">
             <main className="planner-main">
-              <DayPanel
+              {trip.dayPlans.length > 0 ? <DayPanel
+                key={activeDay}
                 trip={trip}
                 activeDay={activeDay}
                 onDrop={(from, to) => moveItem(activeDay, from, to)}
                 onDragStart={() => {}}
                 onDelete={(i) => deleteItem(activeDay, i)}
                 onAdd={addItem}
-              />
+                onEdit={(i, patch) => editItem(activeDay, i, patch)}
+              /> : <p>这份行程还没有逐日安排。请返回助手生成一份新的行程。</p>}
             </main>
             <BudgetSidebar trip={trip} />
           </div>
@@ -486,7 +543,7 @@
     .activity-item:hover{border-color:var(--ring)}
     .activity-item:active{cursor:grabbing}
     .activity-grip{color:var(--muted-foreground);flex:0 0 auto;opacity:.5}
-    .activity-time{flex:0 0 auto;font-family:var(--font-mono);font-size:.8rem;color:var(--muted-foreground);width:44px}
+    .activity-time{flex:0 0 auto;font-family:var(--font-mono);font-size:.8rem;color:var(--muted-foreground);width:9rem;max-width:100%}
     .activity-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:.25rem}
     .activity-text{font-size:.88rem}
     .activity-cat{display:inline-flex;align-items:center;gap:.3rem;width:max-content;padding:.18rem .55rem;border-radius:999px;font-size:.7rem;font-weight:600}
@@ -535,6 +592,25 @@
       .planner-layout{padding:calc(var(--spacing)*4)}
       .activity-item{flex-wrap:wrap}
       .activity-delete{opacity:1}
+    }
+      .review-panel{margin:1rem auto;padding:1rem;border:1px solid var(--border);border-radius:var(--radius);max-width:1200px}
+    .review-panel h2{font-size:1.1rem;margin:0 0 .45rem}
+    .review-panel p,.review-results li{font-size:.875rem;margin:.35rem 0}
+    .review-form{display:flex;gap:.65rem;flex-wrap:wrap;align-items:end;margin-top:.8rem}
+    .review-form label{display:grid;gap:.25rem;font-size:.8rem}
+    .review-form input[type="number"]{width:10rem}
+    .review-results a{text-decoration:underline}
+    .stop-facts{display:block;color:var(--muted-foreground);font-size:.8rem}
+    .activity-reorder{display:flex;gap:.15rem}
+    .activity-reorder button{min-width:28px;min-height:32px}
+    .activity-reorder button:disabled{opacity:.35}
+    .print-trip{display:none}
+    @media(max-width:620px){.activity-item{flex-wrap:wrap}.activity-main{min-width:9rem}.review-panel{margin:.75rem}}
+    @media print{
+      .app > :not(.print-trip){display:none!important}
+      .print-trip{display:block;color:#000;background:#fff}
+      .print-trip li{break-inside:avoid}
+      html,body,.app{background:#fff!important;color:#000!important;overflow:visible!important}
     }
   </style>
 </body>

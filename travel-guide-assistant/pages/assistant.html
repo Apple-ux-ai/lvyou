@@ -13,6 +13,7 @@
   <div id="root"></div>
   <script src="../shared/utils.js"></script>
   <script src="../shared/api.js"></script>
+  <script src="../shared/trip-planner.js"></script>
   <script src="../shared/site-nav.js"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -286,29 +287,12 @@
             )}
             <button className="ghost-btn" onClick={() => {
               try {
-                const draft = {
-                  title: `${itinerary.destination} ${itinerary.days} 天行程`,
-                  destination: itinerary.destination,
-                  days: itinerary.days,
-                  totalBudget: itinerary.total_budget || 8500,
-                  tips: itinerary.tips || [],
-                  dayPlans: (itinerary.day_plans || []).map((d) => ({
-                    day: d.day,
-                    title: d.title || `第 ${d.day} 天`,
-                    items: (d.activities || []).map((a, i) => ({
-                      id: `${d.day}-${i}`,
-                      time: "10:00",
-                      text: a,
-                      cat: "ticket",
-                      budget: Math.round((d.budget || 0) / Math.max(d.activities.length, 1))
-                    }))
-                  }))
-                };
+                const draft = window.TravelMate.planner.fromApi(itinerary);
                 localStorage.setItem("travelmate-planner-draft", JSON.stringify(draft));
                 window.TravelMate.utils.go("planner.html");
               } catch (e) { alert("打开规划器失败"); }
             }}>编辑行程</button>
-            <button className="ghost-btn">分享</button>
+
           </div>
         </div>
       );

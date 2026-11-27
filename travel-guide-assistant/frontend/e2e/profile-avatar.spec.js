@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./local-browser.js";
 
 const avatarPath = path.join(process.cwd(), "frontend", "e2e", "fixtures", "avatar.svg");
 

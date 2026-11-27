@@ -93,3 +93,22 @@ async def test_create_trip_rejects_invalid_days():
         response = await client.post("/api/trips", json={**ITINERARY, "days": 0})
 
     assert response.status_code == 422
+
+@pytest.mark.asyncio
+async def test_review_does_not_save_and_serializes_dated_stop(monkeypatch):
+    from datetime import date
+    from app.services.trip_checks import check_trip
+
+    monkeypatch.setattr(main_module, "check_trip", lambda plan: check_trip(plan, today=date(2026, 11, 27)))
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        result = await client.post("/api/trips/check", json={
+            **ITINERARY, "start_date": "2026-12-27", "adult_count": 2,
+            "day_plans": [{"day": 2, "title": "大阪", "stops": [
+                {"name": "大阪城天守阁", "visit_time": "10:00", "category": "ticket"}
+            ]}],
+        })
+        assert result.status_code == 200
+        assert result.json()["stops"][0]["date"] == "2026-12-28"
+        assert result.json()["issues"][0]["code"] == "closed"
+        assert (await client.get("/api/trips")).json() == []

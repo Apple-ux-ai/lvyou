@@ -16,6 +16,7 @@ from app.core.rate_limit import ChatRateLimitGuard, ConcurrencyLimiter, get_clie
 from app.models.schemas import ChatRequest, Itinerary, Trip
 from app.services.rag_chat import create_default_chat_service
 from app.services.trips import trip_store
+from app.services.trip_checks import check_trip
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -217,6 +218,11 @@ async def validate_index_on_startup() -> None:
 @app.post("/api/trips", response_model=Trip, status_code=201)
 async def create_trip(itinerary: Itinerary) -> Trip:
     return trip_store.create(itinerary)
+
+
+@app.post("/api/trips/check")
+async def review_trip(itinerary: Itinerary) -> dict:
+    return check_trip(itinerary)
 
 
 @app.get("/api/trips", response_model=list[Trip])

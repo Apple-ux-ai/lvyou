@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./local-browser.js";
 
 test("completes the home to saved itinerary loop", async ({ page }) => {
   if (process.env.TRAVELMATE_E2E_API_BASE) {
@@ -23,10 +23,14 @@ test("completes the home to saved itinerary loop", async ({ page }) => {
   await expect(page).toHaveURL(/\/pages\/planner\.html$/);
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByText("行程已保存到个人中心", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/pages\/planner\.html\?tripId=/);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "京都 3 天行程" })).toBeVisible();
 
   await page.getByRole("link", { name: "个人中心" }).click();
   await expect(page).toHaveURL(/\/pages\/profile\.html$/);
   const savedCards = page.locator(".trip-card").filter({ hasText: "京都" });
+  await expect(savedCards.first()).toBeVisible();
   const savedCardCount = await savedCards.count();
   expect(savedCardCount).toBeGreaterThan(0);
   await savedCards.nth(savedCardCount - 1).click();

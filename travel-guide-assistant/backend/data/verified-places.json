@@ -1,0 +1,28 @@
+[
+  {
+    "id": "osaka-castle-museum",
+    "name": "大阪城天守阁",
+    "aliases": ["大阪城天守閣", "大阪城公园 天守阁", "Osaka Castle Museum"],
+    "map_query": "大阪城天守閣 大阪",
+    "source_url": "https://www.osakacastle.net/guide/",
+    "verified_on": "2026-11-27",
+    "effective_from": "2025-04-01",
+    "opens": "09:00",
+    "closes": "18:00",
+    "last_admission": "17:30",
+    "closed_month_days": ["12-28", "12-29", "12-30", "12-31", "01-01"],
+    "adult_ticket_jpy": 1200
+  },
+  {
+    "id": "kinkakuji",
+    "name": "金阁寺",
+    "aliases": ["金閣寺", "鹿苑寺", "金阁寺 镜湖倒影", "Kinkaku-ji"],
+    "map_query": "金閣寺 京都",
+    "source_url": "https://www.shokoku-ji.jp/kinkakuji/access/",
+    "verified_on": "2026-11-27",
+    "opens": "09:00",
+    "closes": "17:00",
+    "closed_month_days": [],
+    "adult_ticket_jpy": 500
+  }
+]
