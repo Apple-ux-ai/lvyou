@@ -64,13 +64,23 @@ TRAVELMATE_INDEX_VERSION=
 - `index_versions/`：启用版本化 embedding 时的 active pointer 和索引版本
 - `manifest.json`：备份格式和内容说明
 
-双击 `restore-latest-travelmate.cmd` 恢复最新有效备份。恢复脚本会先执行只读完整性校验，输入 `RESTORE` 确认后才停止 TravelMate，并将恢复前的数据保存到 `.local/pre-restore/`，然后替换当前数据。恢复完成后重新运行启动器。
+开始恢复前，先停止 TravelMate。如果是手动启动的后端，请在原终端按 Ctrl+C 停止它；`stop-travelmate.cmd` 只能停止启动器记录的进程。确认后端已退出再继续，不要边运行边恢复。
+
+双击 `restore-latest-travelmate.cmd` 会选择最近修改的、包含 `manifest.json` 的备份目录。如果这份备份校验失败，脚本会中止，不会自动尝试更早的备份。校验通过后，输入 `RESTORE` 才会替换本地数据；脚本会先将恢复前的数据保存到 `.local/pre-restore/`。恢复完成后再重新运行启动器。
 
 人工恢复前可先执行只读校验，确认 SQLite、索引 manifest 和 active pointer 完整：
 
 ```powershell
 .\backend\.venv\Scripts\python.exe backend\scripts\verify_backup.py --backup-path backups\<时间戳>
 ```
+
+如果较早的备份通过校验，可在项目目录中用 PowerShell 显式选中它（把路径换成实际目录）：
+
+```powershell
+.\scripts\local\Restore-TravelMate.ps1 -BackupPath '.\backups\<时间戳>'
+```
+
+这些脚本只备份和恢复默认的 `backend/data/trips.db`。如果用 `TRAVELMATE_DB_PATH` 指定了其它行程库，不要把脚本生成的备份当作那份数据库的备份；不要用这些脚本恢复该自定义数据库。
 
 浏览器中的昵称、头像和界面偏好保存在浏览器 localStorage，不包含在文件备份中。清理浏览器站点数据前需注意这一点。
 
