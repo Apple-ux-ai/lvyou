@@ -369,7 +369,8 @@
     function App() {
       const [trip, setTrip] = useState(loadTrip);
       const [activeDay, setActiveDay] = useState(1);
-      const [saved, setSaved] = useState(false);
+      const [savedKey, setSavedKey] = useState(null);
+      const [saveNotice, setSaveNotice] = useState(null);
       const [tripId, setTripId] = useState(() => window.TravelMate.utils.getQueryParam("tripId"));
       const [loading, setLoading] = useState(() => Boolean(window.TravelMate.utils.getQueryParam("tripId")));
       const [saving, setSaving] = useState(false);
@@ -380,6 +381,13 @@
       const reviewKey = JSON.stringify(payload);
       const current = review?.key === reviewKey ? review.data : null;
       const stale = Boolean(review && !current);
+      const hasUnsavedChanges = savedKey !== null && savedKey !== reviewKey;
+
+      useEffect(() => {
+        if (!saveNotice) return;
+        const timer = setTimeout(() => setSaveNotice(null), 2500);
+        return () => clearTimeout(timer);
+      }, [saveNotice]);
 
       useEffect(() => {
         window.TravelMate.utils.initTheme();
@@ -390,6 +398,7 @@
         window.TravelMate.api.getTrip(savedId, (savedTrip) => {
           const loadedTrip = window.TravelMate.planner.fromApi(savedTrip);
           setTrip(loadedTrip);
+          setSavedKey(JSON.stringify(window.TravelMate.planner.toApi(loadedTrip)));
           setTripId(savedTrip.id);
           setActiveDay(loadedTrip.dayPlans[0] ? loadedTrip.dayPlans[0].day : 1);
           setLoading(false);
@@ -448,7 +457,9 @@
         }
         setSaving(true);
         setSaveError("");
-        const itinerary = window.TravelMate.planner.toApi(trip);
+        setSaveNotice(null);
+        const itinerary = payload;
+        const submittedKey = reviewKey;
         const onOk = (savedTrip) => {
           setSaving(false);
           setTripId(savedTrip.id);
@@ -458,8 +469,8 @@
             window.history.replaceState(null, "", url);
           }
           localStorage.removeItem("travelmate-planner-draft");
-          setSaved(true);
-          setTimeout(() => setSaved(false), 2500);
+          setSavedKey(submittedKey);
+          setSaveNotice({ key: submittedKey });
         };
         const onError = (error) => {
           setSaving(false);
@@ -483,6 +494,7 @@
         <div className="app">
           <Topbar onSave={handleSave} saving={saving} />
           {saveError && <div className="page-state error" role="alert">{saveError}<button className="ghost-btn" onClick={() => setSaveError("")}>知道了</button></div>}
+          {hasUnsavedChanges && !saving && <p className="page-state" role="status">当前修改尚未保存，请再次保存。</p>}
           <PlannerHeader trip={trip} total={total} />
           <TripReview trip={trip} onChange={(patch) => setTrip((prev) => ({ ...prev, ...patch }))}
             payload={payload} reviewKey={reviewKey} current={current} stale={stale} setReview={setReview} />
@@ -503,7 +515,7 @@
             </main>
             <BudgetSidebar trip={trip} />
           </div>
-          {saved && <div className="toast"><CheckIcon size={14} /> 行程已保存到个人中心</div>}
+          {saveNotice?.key === reviewKey && <div className="toast" role="status"><CheckIcon size={14} /> 行程已保存到个人中心</div>}
           <button className="floating-save" onClick={handleSave} disabled={saving}><SaveIcon size={15} /> {saving ? "保存中..." : tripId ? "更新行程" : "保存"}</button>
         </div>
       );

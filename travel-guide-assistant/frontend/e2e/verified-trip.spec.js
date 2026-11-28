@@ -64,3 +64,53 @@ test("does not show an editable sample when a saved plan could not load", async 
   await expect(page.getByRole("button", { name: "更新行程" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "返回个人中心" })).toBeVisible();
 });
+
+test("marks a newer edit unsaved when an earlier save finishes", async ({ page, request }) => {
+  await page.addInitScript(() => {
+    if (location.search) return;
+    localStorage.setItem("travelmate-planner-draft", JSON.stringify({
+      title: "大阪", destination: "大阪", days: 1,
+      dayPlans: [{ day: 1, title: "大阪", items: [
+        { id: "osaka", text: "大阪城天守阁", time: "17:45", cat: "ticket" }
+      ] }]
+    }));
+  });
+  let release;
+  let firstResponse;
+  const held = new Promise((resolve) => { release = resolve; });
+  const submitted = new Promise((resolve) => { firstResponse = resolve; });
+  await page.route("**/api/trips", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    firstResponse(await response.json());
+    await held;
+    await route.fulfill({ response });
+  });
+
+  await page.goto("/pages/planner.html");
+  const arrival = page.getByLabel("大阪城天守阁 到达时间");
+  await expect(arrival).toHaveValue("17:45");
+  await page.getByRole("button", { name: "保存行程", exact: true }).click();
+  let id;
+  try {
+    ({ id } = await submitted);
+    expect(id).toBeTruthy();
+    await arrival.fill("11:00");
+    await expect(arrival).toHaveValue("11:00");
+  } finally {
+    release();
+  }
+
+  await expect(page).toHaveURL(new RegExp("tripId=" + id + "$"));
+  await expect(page.getByText("当前修改尚未保存，请再次保存。")).toBeVisible();
+  await expect(page.getByText("行程已保存到个人中心")).toHaveCount(0);
+  const previous = await request.get("http://127.0.0.1:8000/api/trips/" + id);
+  expect((await previous.json()).day_plans[0].stops[0].visit_time).toBe("17:45");
+
+  await page.getByRole("button", { name: "更新行程", exact: true }).click();
+  await expect(page.getByText("行程已保存到个人中心")).toBeVisible();
+  await expect(page.getByText("当前修改尚未保存，请再次保存。")).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp("tripId=" + id + "$"));
+  await page.reload();
+  await expect(arrival).toHaveValue("11:00");
+});
