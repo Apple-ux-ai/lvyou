@@ -157,3 +157,61 @@ def test_verify_backup_rejects_missing_active_version_manifest(tmp_path):
 
     with pytest.raises(BackupError, match="missing manifest"):
         verify_backup(backup_path)
+
+
+@pytest.mark.parametrize(
+    ("relative_path", "bad_contents", "error"),
+    [
+        ("index_versions/active.json", b'{"active_version":"missing"}', "missing manifest"),
+        ("index_versions/versions/bge-v1/knowledge.manifest.json", b"{broken", "Active version manifest"),
+        ("index_versions/versions/bge-v1/knowledge.manifest.json", b"[]", "Active version manifest"),
+        ("trips.db", b"not a SQLite database", "SQLite integrity check failed"),
+    ],
+)
+def test_restore_preflight_rejects_corruption_without_modifying_data(
+    tmp_path, relative_path, bad_contents, error
+):
+    source_root = tmp_path / "source"
+    project_root = tmp_path / "project"
+    for root, destination, version in (
+        (source_root, "Kyoto", "bge-v1"),
+        (project_root, "Osaka", "hash-v1"),
+    ):
+        write_trip_database(root / "backend/data/trips.db", destination)
+        index = root / "backend/index_versions"
+        version_dir = index / "versions" / version
+        version_dir.mkdir(parents=True)
+        (index / "active.json").write_text(json.dumps({"active_version": version}), encoding="utf-8")
+        (version_dir / "knowledge.manifest.json").write_text("{}", encoding="utf-8")
+
+    backup = create_backup(source_root, tmp_path / "backup")
+    (backup / relative_path).write_bytes(bad_contents)
+
+    with pytest.raises(BackupError, match=error):
+        restore_backup(project_root, backup)
+
+    assert not (project_root / ".local/pre-restore").exists()
+    assert read_destination(project_root / "backend/data/trips.db") == "Osaka"
+    index = project_root / "backend/index_versions"
+    assert json.loads((index / "active.json").read_text(encoding="utf-8")) == {"active_version": "hash-v1"}
+    assert (index / "versions/hash-v1/knowledge.manifest.json").read_bytes() == b"{}"
+    assert {path.name for path in (index / "versions").iterdir()} == {"hash-v1"}
+
+
+def test_restore_validates_index_destination_before_writes(tmp_path):
+    source_root = tmp_path / "source"
+    project_root = tmp_path / "project"
+    write_trip_database(source_root / "backend/data/trips.db", "Kyoto")
+    write_trip_database(project_root / "backend/data/trips.db", "Osaka")
+    (source_root / "backend/index_versions").mkdir()
+    backup = create_backup(source_root, tmp_path / "backup")
+    manifest_path = backup / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["index"]["versioned_index"]["versioned_root"] = "../elsewhere"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(BackupError, match="escapes the backend"):
+        restore_backup(project_root, backup)
+
+    assert not (project_root / ".local/pre-restore").exists()
+    assert read_destination(project_root / "backend/data/trips.db") == "Osaka"
