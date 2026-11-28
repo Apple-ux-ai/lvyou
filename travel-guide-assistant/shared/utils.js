@@ -5,9 +5,11 @@
 (function () {
   'use strict';
 
+  var host = window.location && window.location.hostname;
+  var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
   var API_BASE = (typeof window.TravelMateConfig !== 'undefined' && window.TravelMateConfig.API_BASE)
     ? window.TravelMateConfig.API_BASE
-    : 'https://travelmate-api-maw6.onrender.com';
+    : isLocal ? 'http://127.0.0.1:8000' : 'https://travelmate-api-maw6.onrender.com';
 
   var THEME_KEY = 'travelmate-theme';
 

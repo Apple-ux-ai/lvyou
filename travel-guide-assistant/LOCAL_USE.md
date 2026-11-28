@@ -10,6 +10,8 @@
 
 健康检查通过后会自动打开首页。重复运行会复用已启动的服务。双击 `stop-travelmate.cmd` 可停止由该启动器创建的前后端进程。
 
+从本机地址打开前端时，API 默认使用 `127.0.0.1:8000`，不会改走旧的托管演示 API。
+
 启动日志位于 `.local/logs/`。启动失败时先查看 `backend.err.log` 或 `frontend.err.log`。
 
 ## DeepSeek 配置
@@ -19,10 +21,12 @@
 ```dotenv
 DEEPSEEK_API_KEY=你的密钥
 DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_MODEL=deepseek-flash
 ```
 
-不要提交或分享 `backend/.env`。没有 DeepSeek 密钥时，对话会使用本地 LLM fallback；embedding provider 仍按下方配置单独决定。
+模型名以 [DeepSeek 官方模型列表](https://api-docs.deepseek.com/quick_start/pricing/) 为准。如果旧的 `backend/.env` 仍配置了 `deepseek-chat`，请改成 `deepseek-flash` 后重启后端。
+
+不要提交或分享 `backend/.env`。没有 DeepSeek 密钥，或生成行程时 DeepSeek 请求失败，都可能得到本地模板结果。看到行程不代表已连通 DeepSeek；可查看 `.local/logs/backend.err.log` 排查。检索用的 embedding provider 仍单独配置。
 
 当前离线开发环境应显式配置 Hash provider，避免把降级路径误当成语义模型：
 
@@ -60,7 +64,9 @@ TRAVELMATE_INDEX_VERSION=
 - `index_versions/`：启用版本化 embedding 时的 active pointer 和索引版本
 - `manifest.json`：备份格式和内容说明
 
-双击 `restore-latest-travelmate.cmd` 恢复最新有效备份。恢复脚本会先执行只读完整性校验，输入 `RESTORE` 确认后才停止 TravelMate，并将恢复前的数据保存到 `.local/pre-restore/`，然后替换当前数据。恢复完成后重新运行启动器。
+开始恢复前，先停止 TravelMate。如果是手动启动的后端，请在原终端按 Ctrl+C 停止它；`stop-travelmate.cmd` 只能停止启动器记录的进程。确认后端已退出再继续，不要边运行边恢复。
+
+双击 `restore-latest-travelmate.cmd` 会选择最近修改的、包含 `manifest.json` 的备份目录。如果这份备份校验失败，脚本会中止，不会自动尝试更早的备份。校验通过后，输入 `RESTORE` 才会替换本地数据；脚本会先将恢复前的数据保存到 `.local/pre-restore/`。恢复完成后再重新运行启动器。
 
 人工恢复前可先执行只读校验，确认 SQLite、索引 manifest 和 active pointer 完整：
 
@@ -68,7 +74,40 @@ TRAVELMATE_INDEX_VERSION=
 .\backend\.venv\Scripts\python.exe backend\scripts\verify_backup.py --backup-path backups\<时间戳>
 ```
 
+如果较早的备份通过校验，可在项目目录中用 PowerShell 显式选中它（把路径换成实际目录）：
+
+```powershell
+.\scripts\local\Restore-TravelMate.ps1 -BackupPath '.\backups\<时间戳>'
+```
+
+这些脚本只备份和恢复默认的 `backend/data/trips.db`。如果用 `TRAVELMATE_DB_PATH` 指定了其它行程库，不要把脚本生成的备份当作那份数据库的备份；不要用这些脚本恢复该自定义数据库。
+
 浏览器中的昵称、头像和界面偏好保存在浏览器 localStorage，不包含在文件备份中。清理浏览器站点数据前需注意这一点。
+
+## 行程核验、编辑和打印
+
+1. 打开行程规划器。可从助手的「编辑行程」进入，也可以先试用规划器内标有「示例」的关西路线。
+2. 在「出发前检查」填出发日期、成人数和全团门票预算（日元）。逐天填写各站的当地到达时间，然后点击「检查行程」。
+3. 当前只核验大阪城天守阁和金阁寺。可点官方链接核对休馆、入场时间及成人票；没匹配到的活动标成「待核实」，不当成免费。官方票价和其它行程估算分开计算，检查结果不代表实时营业或余票。
+4. 可以只改当天的安排，改完重新检查。保存后，从个人中心打开，日期、时间、排序和交通备注仍在。「打印全部行程 / 存 PDF」可生成一份包含所有天的行程单，不会上传个人行程。
+
+### 复核知识数据
+
+结构化规则维护在 `backend/data/verified-places.json`，每条应保留官方来源及核验日期。规则快照超过 180 天未复核时，不用它来判断开放或计算门票，仍提供官网供用户确认。它不依赖模型或检索索引。攻略文字也同步纠正了旧票价和停用票种；已有本地索引需用原来的配置从 `backend/` 运行 `python scripts/ingest.py` 同步，版本化 BGE 仍按上文流程构建及激活。
+
+### 开发检查
+
+运行浏览器端到端测试前，请先停止日常运行的 TravelMate（若由启动器启动，双击 `stop-travelmate.cmd`）。测试不会复用现有服务；如果端口 5501 或 8000 已占用，会先退出，而不会往日常行程库写入测试数据。
+
+```text
+npm ci
+npm test
+npx playwright install chromium
+npm run test:e2e
+# 后端：cd backend 后运行 python -m pytest -q
+```
+
+Playwright 使用本地模型和测试库；可设 `TRAVELMATE_TEST_BROWSER` 指定测试 Chromium、`TRAVELMATE_TEST_PYTHON` 指定 Python。浏览器测试使用锁定的本地前端依赖，常规页面运行仍会加载 CDN 脚本。
 
 ## 当前运行方式
 

@@ -176,9 +176,9 @@ def _load_manifest(backup_path: Path) -> dict:
         raise BackupError(f"Backup manifest not found: {manifest_path}")
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         raise BackupError(f"Backup manifest is invalid: {manifest_path}") from exc
-    if manifest.get("version") != 1 or not isinstance(manifest.get("contains"), dict):
+    if not isinstance(manifest, dict) or manifest.get("version") != 1 or not isinstance(manifest.get("contains"), dict):
         raise BackupError(f"Backup manifest has an unsupported format: {manifest_path}")
     if manifest["contains"].get("trips_db") and not (backup_path / "trips.db").is_file():
         raise BackupError("Backup manifest references a missing trips.db")
@@ -206,7 +206,10 @@ def _restore_index_target(root: Path, manifest: dict) -> Path:
 def verify_backup(backup_path: str | Path) -> dict:
     """Validate a backup without changing project data."""
     source = Path(backup_path).resolve()
-    manifest = _load_manifest(source)
+    return _verify_backup(source, _load_manifest(source))
+
+
+def _verify_backup(source: Path, manifest: dict) -> dict:
     result: dict = {
         "path": str(source),
         "created_at": manifest.get("created_at"),
@@ -214,11 +217,14 @@ def verify_backup(backup_path: str | Path) -> dict:
     }
 
     if manifest["contains"].get("trips_db"):
-        database = sqlite3.connect(source / "trips.db")
         try:
-            integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
-        finally:
-            database.close()
+            database = sqlite3.connect(f"{(source / 'trips.db').as_uri()}?mode=ro", uri=True)
+            try:
+                integrity = database.execute("PRAGMA integrity_check").fetchone()[0]
+            finally:
+                database.close()
+        except sqlite3.Error as exc:
+            raise BackupError(f"SQLite integrity check failed: {exc}") from exc
         if integrity != "ok":
             raise BackupError(f"SQLite integrity check failed: {integrity}")
         result["trips_db"] = {"integrity": integrity}
@@ -250,6 +256,12 @@ def verify_backup(backup_path: str | Path) -> dict:
             active_manifest = versioned_root / "versions" / active / "knowledge.manifest.json"
             if not active_manifest.is_file():
                 raise BackupError(f"Active version references a missing manifest: {active}")
+            try:
+                metadata = json.loads(active_manifest.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise BackupError(f"Active version manifest is invalid: {active_manifest}") from exc
+            if not isinstance(metadata, dict):
+                raise BackupError(f"Active version manifest must be an object: {active_manifest}")
         versioned = _index_manifest_summary(versioned_root, "index_versions")
         expected = ((manifest.get("index") or {}).get("versioned_index") or {}).get("active_version")
         if expected != active:
@@ -270,6 +282,8 @@ def restore_backup(
     root = Path(project_root).resolve()
     source = Path(backup_path).resolve()
     manifest = _load_manifest(source)
+    _verify_backup(source, manifest)
+    target_index = _restore_index_target(root, manifest) if manifest["contains"].get("index_versions") else None
     restored_at = timestamp or _timestamp()
     safety_path = root / ".local" / "pre-restore" / restored_at
     create_backup(root, safety_path, timestamp=restored_at)
@@ -286,8 +300,7 @@ def restore_backup(
             shutil.rmtree(current_chroma)
         temporary_chroma.replace(current_chroma)
 
-    if manifest["contains"].get("index_versions"):
-        target_index = _restore_index_target(root, manifest)
+    if target_index is not None:
         temporary_index = backend_root / f".index-restore-{uuid4().hex}"
         shutil.copytree(source / "index_versions", temporary_index)
         if target_index.exists():

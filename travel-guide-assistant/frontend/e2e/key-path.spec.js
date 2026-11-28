@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./local-browser.js";
 
 test("user can plan and save a trip from the home page", async ({ page }) => {
   await page.goto("/pages/home.html");

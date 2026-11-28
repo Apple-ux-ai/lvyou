@@ -134,6 +134,14 @@
       });
   }
 
+  function checkTrip(itinerary, onOk, onError) {
+    requestJSON(API_BASE + '/api/trips/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(itinerary)
+    }, onOk, onError);
+  }
+
   function saveTrip(itinerary, onOk, onError) {
     requestJSON(API_BASE + '/api/trips', {
       method: 'POST',
@@ -164,6 +172,7 @@
     saveTrip: saveTrip,
     getTrip: getTrip,
     listTrips: listTrips,
-    updateTrip: updateTrip
+    updateTrip: updateTrip,
+    checkTrip: checkTrip
   };
 })();
